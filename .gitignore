@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environment
+.venv/
+.venv-htr/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Data and local artifacts
+*.log
+*.sqlite3
+*.db
+
+# Project-specific generated content
+data/raw/*
+data/processed/*
+data/annotations/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Hugging Face and local model caches
+.cache/
+**/.cache/huggingface/
+**/huggingface/
+experiments/htr_baseline/
+!data/annotations/.gitkeep
+
+# Build / packaging
+build/
+dist/
+*.tar.gz
+
+# Secrets
+.env
+.env.*

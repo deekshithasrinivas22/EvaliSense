@@ -1,0 +1,13 @@
+# Core project dependencies for EvaliSense
+
+numpy
+opencv-python
+pytest
+
+# Baseline HTR dependencies (install in the separate Python 3.13 environment).
+torch
+transformers<5
+Pillow
+sentencepiece
+
+# Future ML and API dependencies will be added when those stages are implemented.
