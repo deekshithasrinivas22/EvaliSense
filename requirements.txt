@@ -1,13 +1,31 @@
-# Core project dependencies for EvaliSense
+# EvaliSense — Python Dependencies
+# Install with: pip install -r requirements.txt
 
+# ─── Core ───
 numpy
 opencv-python
-pytest
+Pillow
 
-# Baseline HTR dependencies (install in the separate Python 3.13 environment).
+# ─── HTR (Handwritten Text Recognition) ───
 torch
 transformers<5
-Pillow
 sentencepiece
 
-# Future ML and API dependencies will be added when those stages are implemented.
+# ─── NLP / Semantic Evaluation ───
+sentence-transformers
+
+# ─── ML / Risk Prediction ───
+scikit-learn
+joblib
+
+# ─── API / Backend ───
+fastapi
+uvicorn[standard]
+python-multipart
+
+# ─── Testing ───
+pytest
+pytest-cov
+
+# ─── Utilities ───
+# (no additional utilities required)

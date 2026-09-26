@@ -1,86 +1,326 @@
 # EvaliSense
 
-## Project name
-EvaliSense: AI-Powered Handwritten Examination Evaluation with ML-Based Grading Error Prediction
+## Project Name
+**EvaliSense: AI-Powered Handwritten Examination Evaluation with ML-Based Grading Error Prediction**
 
-## Project purpose
-EvaliSense is an examiner-assistance system designed to support the evaluation of handwritten examination answers. It does not replace teachers or examiners. The system is intended to assist with a structured, transparent, and auditable evaluation workflow in which a human examiner remains responsible for the final mark.
+## Project Purpose
+EvaliSense is an **examiner-assistance system** designed to support the evaluation of handwritten examination answers. It does **not** replace teachers or examiners. The system assists with a structured, transparent, and auditable evaluation workflow in which a **human examiner remains responsible for the final mark**.
 
-## Core research question
-Can machine learning predict when an AI-based handwritten examination grading system is likely to produce a significant grading error?
+## Core Research Question
+> Can machine learning predict when an AI-based handwritten examination grading system is likely to produce a significant grading error?
 
-## High-level pipeline
-1. Handwritten examination answer images are collected and prepared for processing.
-2. Image preprocessing and document cleaning are applied to improve recognition quality.
-3. HTR/OCR is used to obtain machine-readable text from handwritten responses.
-4. The extracted text is evaluated using semantic and rubric-based assessment logic.
-5. A preliminary AI-generated mark is produced for the response.
-6. Features are extracted from the recognition, evaluation, and document-processing pipeline.
-7. A separate supervised machine learning model predicts whether a grading outcome is at high risk of significant error.
-8. High-risk cases are flagged for human examiner review.
-9. The examiner remains the final authority.
+## High-Level Pipeline
 
-## Current development status
-This repository is in the initial project scaffolding stage. The core system components are not yet implemented.
+```
+Handwritten Answer Image
+        ↓
+Image Preprocessing (grayscale, denoise, contrast, deskew)
+        ↓
+Handwritten Text Recognition (TrOCR)
+        ↓
+Extracted Text + OCR Confidence
+        ↓
+Rubric-Based Semantic Evaluation
+        ↓
+AI Preliminary Mark
+        ↓
+Evaluation Feature Extraction
+        ↓
+ML-Based Grading Error Risk Prediction
+        ↓
+LOW RISK / HIGH RISK
+        ↓
+Human Examiner Review
+        ↓
+Final Examiner Mark
+```
 
-The following components are planned as modular, independently testable units:
-- preprocessing
-- htr
-- evaluation
-- features
-- models
+## Technology Stack
 
-Current implementation focus:
-- project structure and repository setup
-- documentation and modular architecture
-- environment initialization
+| Component | Technology |
+|-----------|-----------|
+| Language | Python 3.13 |
+| HTR Model | `microsoft/trocr-base-handwritten` (TrOCR) |
+| Embeddings | `all-MiniLM-L6-v2` (sentence-transformers) |
+| ML Models | scikit-learn (Logistic Regression, Random Forest, SVM, Gradient Boosting) |
+| Image Processing | OpenCV |
+| Backend API | FastAPI + Uvicorn |
+| Frontend | HTML / CSS / JavaScript |
+| Testing | pytest |
 
-Important constraints:
-- HTR/OCR is not yet implemented.
-- AI grading is not yet implemented.
-- The ML grading-error predictor is not yet implemented.
-- No model results, accuracy values, or fabricated evaluation outcomes are included in this repository.
+## Repository Structure
 
-## Architectural principle
-The project is intentionally modular so that preprocessing, handwriting recognition, answer evaluation, feature extraction, and grading-error prediction can be developed and tested independently before integration.
+```
+EvaliSense/
+├── config.py                          # Project-wide configuration
+├── requirements.txt                   # Python dependencies
+├── preprocessing_demo.py              # Preprocessing CLI demo
+├── htr_demo.py                        # HTR CLI demo
+├── generate_synthetic_dataset.py      # Synthetic dataset generator
+├── train_risk_model.py                # Model training script
+│
+├── preprocessing/                     # Image preprocessing module
+│   ├── image_preprocessor.py          # Configurable preprocessing pipeline
+│   └── pipeline.py                    # Convenience wrapper
+│
+├── htr/                               # Handwritten Text Recognition module
+│   ├── recognizer.py                  # TrOCR model integration
+│   ├── line_segmenter.py              # Page → line segmentation
+│   ├── pipeline.py                    # End-to-end HTR pipeline
+│   └── result.py                      # Result data structures
+│
+├── evaluation/                        # Answer evaluation module
+│   ├── rubric.py                      # Rubric schema and validation
+│   ├── semantic.py                    # Semantic similarity (sentence-transformers)
+│   └── evaluator.py                   # Rubric-based answer evaluator
+│
+├── features/                          # Feature extraction module
+│   ├── extractor.py                   # Feature vector extraction
+│   └── dataset.py                     # Ground-truth dataset management
+│
+├── models/                            # ML models module
+│   └── risk_model.py                  # Grading-error risk prediction
+│
+├── api/                               # Backend API
+│   └── app.py                         # FastAPI application
+│
+├── frontend/                          # Web frontend
+│   ├── index.html                     # Dashboard and evaluation UI
+│   ├── style.css                      # Design system
+│   └── app.js                         # Frontend logic
+│
+├── tests/                             # Test suite
+│   ├── test_preprocessing.py
+│   ├── test_htr.py
+│   ├── test_evaluation.py
+│   ├── test_features.py
+│   ├── test_risk_model.py
+│   └── test_config.py
+│
+├── data/                              # Data directory
+│   ├── raw/                           # Raw handwritten images
+│   ├── processed/                     # Preprocessed images
+│   ├── samples/                       # Sample rubrics and datasets
+│   ├── annotations/                   # Expert annotations
+│   └── results/                       # Evaluation results
+│
+├── experiments/                       # Experiment tracking
+├── notebooks/                         # Exploratory notebooks
+└── utils/                             # Utility modules
+    └── logging.py                     # Structured logging
+```
 
-## Examiner authority
-The examiner remains the final authority.
+## Installation
 
-## Image Preprocessing
-Handwritten answer preprocessing is a required stage before HTR/OCR. The preprocessing module prepares scanned or photographed examination responses for downstream recognition by reducing noise, improving contrast, standardizing intensity, and correcting simple geometric distortions when useful.
+### 1. Create Environment
+```bash
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # Linux/macOS
+```
 
-The current implementation includes configurable image loading, grayscale conversion, denoising, contrast enhancement, thresholding, and optional deskewing. These operations are designed to be reusable and modular so the preprocessing stage can be tested independently before the HTR pipeline is added.
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-The exact settings may vary depending on handwriting quality, image capture conditions, and dataset characteristics. Preprocessing is intended to improve the input quality for subsequent recognition tasks, but it does not guarantee better HTR accuracy in all cases.
+### 3. Verify Installation
+```bash
+python -c "from config import config; print(config.project_root)"
+python -c "from preprocessing import ImagePreprocessor; print('OK')"
+python -c "from evaluation import AnswerEvaluator; print('OK')"
+```
 
-### Command-line demonstration
-A simple preprocessing demo can be run with a handwritten answer image:
+## Running the Project
 
+### Start the Backend API
+```bash
+uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Then open http://127.0.0.1:8000 in your browser.
+
+### Run Preprocessing Demo
 ```bash
 python preprocessing_demo.py --input path/to/answer.jpg --output data/processed/answer_processed.png
 ```
 
-This saves the final processed image and keeps the preprocessing stage separate from future HTR and grading components.
-
-## Handwritten Text Recognition
-
-HTR converts handwritten examination content into machine-readable text. Because the development input is a full notebook page, the baseline first segments the page into ordered candidate text lines and then applies line-level recognition. Segmentation and recognition are separate modules so they can be improved or replaced independently.
-
-This repository contains a pretrained TrOCR baseline (`microsoft/trocr-base-handwritten`) for development experimentation. The HTR architecture is configurable and is not considered permanently finalized. Recognition quality will be evaluated experimentally later; this single sample is not a formal accuracy evaluation, and the system does not assume HTR output is always correct.
-
-The optional confidence value is derived from the geometric mean of the generated-token probabilities returned by the model. It is an uncalibrated development signal and is kept separate from recognized text because it may become a candidate feature for future grading-error prediction.
-
-The baseline can compare raw and preprocessed inputs:
-
+### Run HTR Demo
 ```bash
 python htr_demo.py --input data/raw/test_answer.jpg --output experiments/htr_baseline/raw --debug-lines
-python htr_demo.py --input data/processed/test_answer_processed.png --output experiments/htr_baseline/processed --debug-lines
 ```
 
-Use a separate Python 3.13 environment for HTR on this Windows setup because the original environment uses Python 3.14 and the selected ML dependency stack may not provide compatible builds there. Install the dependencies from `requirements.txt` into that environment. The model is downloaded through the normal Hugging Face cache and is not stored in this repository.
+## Model Training
 
-This is a **baseline implementation / experimentation** stage only. It does not implement semantic evaluation, rubric scoring, marking, or grading-error prediction. Human examiners remain the final authority.
+### 1. Generate Synthetic Dataset (Development)
+```bash
+python generate_synthetic_dataset.py --output data/samples/synthetic_dataset.jsonl --count 200
+```
 
-## Repository structure
-The project currently includes the planned directories for data, preprocessing, HTR, evaluation, features, models, experiments, utilities, API, notebooks, tests, and project-level configuration.
+> ⚠️ Synthetic data is for development only. Do not present as real research results.
+
+### 2. Train Risk Model
+```bash
+# Train a single model
+python train_risk_model.py --dataset data/samples/synthetic_dataset.jsonl --model RandomForest
+
+# Compare all models and select the best
+python train_risk_model.py --dataset data/samples/synthetic_dataset.jsonl --compare
+```
+
+### 3. Train with Custom Threshold
+```bash
+python train_risk_model.py --dataset data/samples/synthetic_dataset.jsonl --compare --error-threshold 1.5
+```
+
+## Running Tests
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test files
+pytest tests/test_preprocessing.py -v
+pytest tests/test_evaluation.py -v
+pytest tests/test_features.py -v
+pytest tests/test_risk_model.py -v
+
+# Run with coverage
+pytest tests/ -v --cov=. --cov-report=term-missing
+```
+
+## Configuration
+
+All settings can be overridden via environment variables prefixed with `EVALISENSE_`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EVALISENSE_HTR_MODEL_NAME` | `microsoft/trocr-base-handwritten` | HTR model |
+| `EVALISENSE_EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sentence embedding model |
+| `EVALISENSE_ERROR_THRESHOLD` | `2.0` | Grading error threshold (marks) |
+| `EVALISENSE_API_PORT` | `8000` | API server port |
+| `EVALISENSE_LOG_LEVEL` | `INFO` | Logging level |
+
+## Dataset Format
+
+### Ground-Truth Records (JSONL)
+Each line is a JSON object:
+```json
+{
+  "record_id": "abc123",
+  "question": "Explain photosynthesis",
+  "student_answer": "...",
+  "ai_mark": 7.0,
+  "expert_mark": 6.0,
+  "max_marks": 10.0,
+  "absolute_error": 1.0,
+  "is_grading_error": false,
+  "features": { "ocr_confidence": 0.72, "..." : "..." },
+  "metadata": { "source": "examiner_review" }
+}
+```
+
+### Rubric Format (JSON)
+```json
+{
+  "question": "Explain photosynthesis",
+  "max_marks": 10,
+  "reference_answer": "...",
+  "criteria": [
+    {
+      "id": "c1",
+      "description": "Explains energy conversion",
+      "marks": 2,
+      "keywords": ["light energy", "chemical energy"]
+    }
+  ]
+}
+```
+
+## API Documentation
+
+When the server is running, interactive API docs are available at:
+- **Swagger UI**: http://127.0.0.1:8000/docs
+- **ReDoc**: http://127.0.0.1:8000/redoc
+
+### Key Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/upload` | Upload handwritten answer image |
+| `POST` | `/api/preprocess/{id}` | Run image preprocessing |
+| `POST` | `/api/recognize/{id}` | Run HTR |
+| `POST` | `/api/evaluate/{id}` | Evaluate against rubric |
+| `POST` | `/api/predict-risk/{id}` | Predict grading error risk |
+| `POST` | `/api/submit-review/{id}` | Submit examiner's final mark |
+| `GET`  | `/api/session/{id}` | Get session details |
+| `GET`  | `/api/model-info` | Risk model information |
+| `GET`  | `/api/health` | Health check |
+
+## Architecture
+
+```
+                    ┌──────────────┐
+                    │   Frontend   │
+                    │ (HTML/CSS/JS)│
+                    └──────┬───────┘
+                           │ HTTP
+                    ┌──────▼───────┐
+                    │  FastAPI     │
+                    │  Backend     │
+                    └──────┬───────┘
+            ┌──────────────┼──────────────┐
+            │              │              │
+    ┌───────▼─────┐ ┌──────▼──────┐ ┌─────▼──────┐
+    │Preprocessing│ │ HTR Pipeline│ │ Evaluation  │
+    │  Module     │ │ (TrOCR)     │ │  Module     │
+    └─────────────┘ └─────────────┘ └──────┬──────┘
+                                           │
+                                    ┌──────▼──────┐
+                                    │  Feature    │
+                                    │ Extraction  │
+                                    └──────┬──────┘
+                                           │
+                                    ┌──────▼──────┐
+                                    │  Risk Model │
+                                    │ (sklearn)   │
+                                    └──────┬──────┘
+                                           │
+                                    ┌──────▼──────┐
+                                    │  Examiner   │
+                                    │  Review     │
+                                    └─────────────┘
+```
+
+### Future Cloud Architecture
+```
+Frontend → Backend API → Preprocessing Service → HTR Service
+                       → Evaluation Service → Risk Prediction Service
+                       → Database / Object Storage
+```
+
+## Examiner Authority
+**The examiner remains the final authority.** EvaliSense produces preliminary AI marks and risk predictions that serve as decision-support for the human examiner. The examiner can approve, modify, or override any AI-generated evaluation.
+
+## Limitations
+- HTR accuracy depends on handwriting quality and image conditions.
+- Semantic evaluation uses general-purpose embeddings, not domain-specific ones.
+- The risk model requires sufficient ground-truth data for meaningful results.
+- Synthetic data is for development only and does not represent real performance.
+- CPU-only execution may be slow for large batches.
+
+## Future Improvements
+- Domain-specific fine-tuning of the embedding model.
+- Active learning for risk model improvement.
+- PDF and multi-page document support.
+- Batch evaluation mode.
+- Database integration for persistent storage.
+- User authentication and role-based access.
+- Deployment automation (Docker, cloud).
+
+## Important Design Decisions
+1. **Modular architecture**: Each component (preprocessing, HTR, evaluation, features, models, API) is independently testable.
+2. **Lazy model loading**: Models are loaded on first use and cached to avoid unnecessary startup time.
+3. **Heuristic fallback**: When no trained ML model exists, a rule-based heuristic provides risk estimates.
+4. **Ground-truth collection**: Every examiner review creates a training record for future model improvement.
+5. **Configurable error threshold**: The grading-error threshold is configurable, not hardcoded.
+6. **CPU-first design**: All components are optimised for CPU execution.

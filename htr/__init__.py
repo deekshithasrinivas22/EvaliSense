@@ -18,4 +18,4 @@ __all__ = [
 	"LineRegion",
 	"RecognizedLine",
 ]
-"""HTR package placeholder."""
+"""Handwritten Text Recognition package for EvaliSense."""

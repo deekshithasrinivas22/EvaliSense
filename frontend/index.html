@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EvaliSense — AI-Powered Handwritten Examination Evaluation with ML-Based Grading Error Prediction. An examiner-assistance system.">
+    <title>EvaliSense — AI-Powered Examination Evaluation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ───────────── Sidebar ───────────── -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect x="2" y="2" width="24" height="24" rx="6" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 14h12M14 8v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="14" cy="14" r="4" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+                </svg>
+            </div>
+            <span class="brand-text">EvaliSense</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard">
+                <span class="nav-icon">📊</span> Dashboard
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="evaluate" id="nav-evaluate">
+                <span class="nav-icon">📝</span> Evaluate Answer
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="review" id="nav-review">
+                <span class="nav-icon">👁️</span> Examiner Review
+            </a></li>
+            <li><a href="#" class="nav-link" data-page="model" id="nav-model">
+                <span class="nav-icon">🤖</span> Model Info
+            </a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <p class="sidebar-note">The human examiner<br>is the final authority.</p>
+        </div>
+    </nav>
+
+    <!-- ───────────── Main Content ───────────── -->
+    <main class="main-content" id="main-content">
+
+        <!-- ═══════ Dashboard Page ═══════ -->
+        <section class="page active" id="page-dashboard">
+            <header class="page-header">
+                <h1>Dashboard</h1>
+                <p class="page-subtitle">Overview of EvaliSense evaluation system</p>
+            </header>
+
+            <div class="stats-grid">
+                <div class="stat-card" id="stat-sessions">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Active Sessions</div>
+                </div>
+                <div class="stat-card" id="stat-model-status">
+                    <div class="stat-value">—</div>
+                    <div class="stat-label">Risk Model</div>
+                </div>
+                <div class="stat-card" id="stat-api-status">
+                    <div class="stat-value">—</div>
+                    <div class="stat-label">API Status</div>
+                </div>
+            </div>
+
+            <div class="card workflow-card">
+                <h2>Evaluation Workflow</h2>
+                <div class="workflow-steps">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Upload Image</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Preprocess</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <div class="step-label">HTR / OCR</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Evaluate</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-number">5</div>
+                        <div class="step-label">Risk Prediction</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="step-number">6</div>
+                        <div class="step-label">Examiner Review</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>About EvaliSense</h2>
+                <p>EvaliSense is an <strong>examiner-assistance system</strong> — it does <em>not</em> replace teachers or examiners. The system assists with a structured, transparent, and auditable evaluation workflow in which a <strong>human examiner remains responsible for the final mark</strong>.</p>
+                <p style="margin-top: 0.75rem; opacity: 0.7;">Core research question: <em>Can machine learning predict when an AI-based handwritten examination grading system is likely to produce a significant grading error?</em></p>
+            </div>
+        </section>
+
+        <!-- ═══════ Evaluate Page ═══════ -->
+        <section class="page" id="page-evaluate">
+            <header class="page-header">
+                <h1>Evaluate Handwritten Answer</h1>
+                <p class="page-subtitle">Upload, recognise, and evaluate a handwritten answer</p>
+            </header>
+
+            <!-- Step 1: Upload -->
+            <div class="card" id="upload-section">
+                <h2>Step 1 — Upload Image</h2>
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">📤</div>
+                    <p>Drag & drop a handwritten answer image here</p>
+                    <p class="upload-hint">or click to browse (PNG, JPG, JPEG)</p>
+                    <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                </div>
+                <div class="upload-preview" id="upload-preview" style="display: none;">
+                    <img id="preview-image" alt="Uploaded handwritten answer">
+                    <p id="preview-filename"></p>
+                </div>
+            </div>
+
+            <!-- Step 2: Preprocess -->
+            <div class="card" id="preprocess-section" style="display: none;">
+                <h2>Step 2 — Preprocessing</h2>
+                <button class="btn btn-primary" id="btn-preprocess">Run Preprocessing</button>
+                <div class="result-box" id="preprocess-result" style="display: none;"></div>
+            </div>
+
+            <!-- Step 3: HTR -->
+            <div class="card" id="htr-section" style="display: none;">
+                <h2>Step 3 — Handwritten Text Recognition</h2>
+                <button class="btn btn-primary" id="btn-recognize">Run HTR</button>
+                <div class="result-box" id="htr-result" style="display: none;"></div>
+            </div>
+
+            <!-- Step 4: Rubric + Evaluate -->
+            <div class="card" id="evaluate-section" style="display: none;">
+                <h2>Step 4 — Rubric-Based Evaluation</h2>
+                <div class="rubric-input">
+                    <label for="rubric-textarea">Rubric (JSON):</label>
+                    <textarea id="rubric-textarea" rows="12" placeholder="Paste rubric JSON here..."></textarea>
+                    <button class="btn btn-secondary" id="btn-load-sample-rubric">Load Sample Rubric</button>
+                </div>
+                <button class="btn btn-primary" id="btn-evaluate" style="margin-top: 1rem;">Run Evaluation</button>
+                <div class="result-box" id="eval-result" style="display: none;"></div>
+            </div>
+
+            <!-- Step 5: Risk Prediction -->
+            <div class="card" id="risk-section" style="display: none;">
+                <h2>Step 5 — Grading Error Risk Prediction</h2>
+                <button class="btn btn-primary" id="btn-predict-risk">Predict Risk</button>
+                <div class="result-box" id="risk-result" style="display: none;"></div>
+            </div>
+
+            <!-- Step 6: Examiner Review -->
+            <div class="card" id="review-section-inline" style="display: none;">
+                <h2>Step 6 — Examiner Review</h2>
+                <div class="review-form">
+                    <div class="review-summary" id="review-summary"></div>
+                    <div class="form-group">
+                        <label for="examiner-mark-input">Final Examiner Mark:</label>
+                        <input type="number" id="examiner-mark-input" step="0.5" min="0" placeholder="Enter final mark">
+                        <span id="max-mark-display"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="examiner-notes-input">Examiner Notes (optional):</label>
+                        <textarea id="examiner-notes-input" rows="3" placeholder="Add any notes..."></textarea>
+                    </div>
+                    <div class="review-actions">
+                        <button class="btn btn-approve" id="btn-approve">Approve AI Mark</button>
+                        <button class="btn btn-primary" id="btn-submit-review">Submit Final Mark</button>
+                    </div>
+                </div>
+                <div class="result-box" id="review-result" style="display: none;"></div>
+            </div>
+        </section>
+
+        <!-- ═══════ Review Page ═══════ -->
+        <section class="page" id="page-review">
+            <header class="page-header">
+                <h1>Examiner Review Queue</h1>
+                <p class="page-subtitle">Sessions requiring examiner attention</p>
+            </header>
+            <div class="card">
+                <div id="review-queue">
+                    <p class="empty-state">No sessions available. Evaluate an answer first.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Model Info Page ═══════ -->
+        <section class="page" id="page-model">
+            <header class="page-header">
+                <h1>Model Information</h1>
+                <p class="page-subtitle">Risk prediction model details and performance</p>
+            </header>
+            <div class="card" id="model-info-card">
+                <div id="model-info-content">
+                    <p class="empty-state">Loading model information...</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loading-text">Processing...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

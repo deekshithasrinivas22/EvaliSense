@@ -32,8 +32,10 @@ Thumbs.db
 data/raw/*
 data/processed/*
 data/annotations/*
+data/results/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/results/.gitkeep
 
 # Hugging Face and local model caches
 .cache/
@@ -41,6 +43,10 @@ data/annotations/*
 **/huggingface/
 experiments/htr_baseline/
 !data/annotations/.gitkeep
+
+# Trained models and synthetic data
+trained_models/
+data/samples/*.jsonl
 
 # Build / packaging
 build/
