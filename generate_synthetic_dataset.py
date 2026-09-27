@@ -24,7 +24,7 @@ from features.extractor import FEATURE_NAMES
 def _generate_record(rng: np.random.Generator, error_threshold: float) -> dict:
     """Create one synthetic evaluation record with plausible feature values."""
 
-    max_marks = rng.choice([5, 10, 15, 20])
+    max_marks = int(rng.choice([5, 10, 15, 20]))
     ocr_confidence = float(np.clip(rng.normal(0.55, 0.18), 0.05, 0.99))
 
     # Simulate varying answer quality
@@ -44,7 +44,7 @@ def _generate_record(rng: np.random.Generator, error_threshold: float) -> dict:
     std_crit_sim = float(crit_sims.std())
 
     rubric_coverage = float(np.mean(crit_sims > 0.3))
-    keyword_coverage = float(rng.integers(0, n_criteria * 3))
+    keyword_coverage = int(rng.integers(0, n_criteria * 3))
 
     answer_length_chars = int(rng.integers(50, 800))
     answer_length_tokens = int(answer_length_chars / rng.uniform(4.0, 6.0))
@@ -70,8 +70,8 @@ def _generate_record(rng: np.random.Generator, error_threshold: float) -> dict:
     expert_mark = float(np.clip(ai_mark + expert_noise, 0, max_marks))
     expert_mark = round(expert_mark * 2) / 2  # round to 0.5
 
-    absolute_error = abs(ai_mark - expert_mark)
-    is_grading_error = absolute_error >= error_threshold
+    absolute_error = float(abs(ai_mark - expert_mark))
+    is_grading_error = bool(absolute_error >= error_threshold)
 
     features = {
         "ocr_confidence": ocr_confidence,
@@ -87,7 +87,7 @@ def _generate_record(rng: np.random.Generator, error_threshold: float) -> dict:
         "num_recognized_lines": num_lines,
         "evaluation_confidence": eval_confidence,
         "ai_preliminary_mark": ai_mark,
-        "max_marks": max_marks,
+        "max_marks": int(max_marks),
         "normalized_score": normalized_score,
         "mark_deviation_from_mean_criterion": mark_deviation,
     }
