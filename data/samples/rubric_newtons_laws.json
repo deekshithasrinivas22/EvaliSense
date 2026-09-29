@@ -1,0 +1,56 @@
+{
+  "question": "Explain Newton's three laws of motion and give a real-world example for each.",
+  "max_marks": 12,
+  "reference_answer": "Newton's First Law (Law of Inertia) states that an object at rest stays at rest and an object in motion stays in motion at constant velocity unless acted upon by an external force. Example: a book on a table remains stationary until pushed. Newton's Second Law states that the acceleration of an object is directly proportional to the net force acting on it and inversely proportional to its mass (F = ma). Example: it takes more force to accelerate a heavy truck than a bicycle. Newton's Third Law states that for every action there is an equal and opposite reaction. Example: when you push against a wall, the wall pushes back against you with equal force.",
+  "criteria": [
+    {
+      "id": "c1",
+      "description": "Correctly states Newton's First Law (inertia)",
+      "marks": 2,
+      "keywords": ["first law", "inertia", "rest", "motion", "constant velocity", "external force"]
+    },
+    {
+      "id": "c2",
+      "description": "Provides a valid example for the First Law",
+      "marks": 1,
+      "keywords": ["example", "stationary", "seatbelt", "book", "ball"]
+    },
+    {
+      "id": "c3",
+      "description": "Correctly states Newton's Second Law (F=ma)",
+      "marks": 2,
+      "keywords": ["second law", "F=ma", "force", "mass", "acceleration", "proportional"]
+    },
+    {
+      "id": "c4",
+      "description": "Provides a valid example for the Second Law",
+      "marks": 2,
+      "keywords": ["example", "push", "heavy", "lighter", "truck", "bicycle", "accelerate"]
+    },
+    {
+      "id": "c5",
+      "description": "Correctly states Newton's Third Law (action-reaction)",
+      "marks": 2,
+      "keywords": ["third law", "action", "reaction", "equal", "opposite"]
+    },
+    {
+      "id": "c6",
+      "description": "Provides a valid example for the Third Law",
+      "marks": 2,
+      "keywords": ["example", "push", "wall", "rocket", "swim", "jump"]
+    },
+    {
+      "id": "c7",
+      "description": "Uses correct scientific terminology throughout",
+      "marks": 1,
+      "keywords": ["Newton", "force", "acceleration", "velocity", "mass"]
+    }
+  ],
+  "metadata": {
+    "subject": "Physics",
+    "topic": "Newton's Laws of Motion",
+    "level": "GCSE / O-Level",
+    "source": "Sample rubric for EvaliSense demonstration",
+    "is_synthetic": true
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "question": "Describe the structure and function of the main organelles found in animal cells.",
+  "max_marks": 10,
+  "reference_answer": "Animal cells contain several key organelles. The nucleus houses DNA and controls cell activities including growth and reproduction. The cell membrane is a selectively permeable barrier that controls what enters and exits the cell. Mitochondria are the powerhouses of the cell, producing ATP through cellular respiration. The endoplasmic reticulum comes in two forms: rough ER (with ribosomes, involved in protein synthesis) and smooth ER (involved in lipid synthesis). The Golgi apparatus modifies, packages and transports proteins. Ribosomes are the sites of protein synthesis. Lysosomes contain digestive enzymes that break down waste materials and cellular debris.",
+  "criteria": [
+    {
+      "id": "c1",
+      "description": "Describes the nucleus and its role in storing DNA and controlling cell activities",
+      "marks": 2,
+      "keywords": ["nucleus", "DNA", "control", "genetic", "chromosome"]
+    },
+    {
+      "id": "c2",
+      "description": "Explains the cell membrane as a selectively permeable barrier",
+      "marks": 1,
+      "keywords": ["cell membrane", "permeable", "barrier", "transport"]
+    },
+    {
+      "id": "c3",
+      "description": "Describes mitochondria and ATP production through respiration",
+      "marks": 2,
+      "keywords": ["mitochondria", "ATP", "energy", "respiration", "powerhouse"]
+    },
+    {
+      "id": "c4",
+      "description": "Explains the endoplasmic reticulum (rough and smooth) and its functions",
+      "marks": 2,
+      "keywords": ["endoplasmic reticulum", "rough ER", "smooth ER", "protein", "lipid"]
+    },
+    {
+      "id": "c5",
+      "description": "Describes the Golgi apparatus and its role in protein processing",
+      "marks": 2,
+      "keywords": ["Golgi", "package", "modify", "transport", "protein"]
+    },
+    {
+      "id": "c6",
+      "description": "Mentions ribosomes or lysosomes and their functions",
+      "marks": 1,
+      "keywords": ["ribosome", "lysosome", "protein synthesis", "enzyme", "digest"]
+    }
+  ],
+  "metadata": {
+    "subject": "Biology",
+    "topic": "Cell Biology",
+    "level": "GCSE / O-Level",
+    "source": "Sample rubric for EvaliSense demonstration",
+    "is_synthetic": true
+  }
+}

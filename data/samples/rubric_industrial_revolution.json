@@ -1,0 +1,50 @@
+{
+  "question": "Describe the main causes and consequences of the Industrial Revolution in Britain.",
+  "max_marks": 15,
+  "reference_answer": "The Industrial Revolution began in Britain in the late 18th century and fundamentally transformed the economy from agrarian to industrial. Key causes included agricultural improvements that freed labour, abundant natural resources such as coal and iron, a strong banking system that provided capital, colonial trade networks, and technological innovations. Major inventions like the steam engine (James Watt), the spinning jenny (Hargreaves), and the power loom revolutionised manufacturing. Consequences included rapid urbanisation as workers moved to factory towns, harsh working conditions with long hours and child labour, significant economic growth and the rise of a new middle class, environmental pollution from factories, and the beginning of the trade union movement. The revolution spread from Britain to other European countries and North America, transforming the global economy.",
+  "criteria": [
+    {
+      "id": "c1",
+      "description": "Identifies the time period and location of the Industrial Revolution",
+      "marks": 2,
+      "keywords": ["18th century", "1700s", "Britain", "England", "late 1700"]
+    },
+    {
+      "id": "c2",
+      "description": "Explains causes: agricultural changes, resources, or capital availability",
+      "marks": 3,
+      "keywords": ["agriculture", "coal", "iron", "capital", "banking", "resources", "trade"]
+    },
+    {
+      "id": "c3",
+      "description": "Names key inventions or inventors",
+      "marks": 3,
+      "keywords": ["steam engine", "Watt", "spinning jenny", "power loom", "Hargreaves", "Arkwright"]
+    },
+    {
+      "id": "c4",
+      "description": "Describes urbanisation and its effects",
+      "marks": 2,
+      "keywords": ["urbanisation", "cities", "factory", "town", "population", "migration"]
+    },
+    {
+      "id": "c5",
+      "description": "Discusses social consequences: working conditions, child labour, or inequality",
+      "marks": 3,
+      "keywords": ["working conditions", "child labour", "long hours", "inequality", "trade union", "poor"]
+    },
+    {
+      "id": "c6",
+      "description": "Mentions economic impact or spread to other countries",
+      "marks": 2,
+      "keywords": ["economic growth", "middle class", "Europe", "global", "spread", "manufacturing"]
+    }
+  ],
+  "metadata": {
+    "subject": "History",
+    "topic": "Industrial Revolution",
+    "level": "GCSE / O-Level",
+    "source": "Sample rubric for EvaliSense demonstration",
+    "is_synthetic": true
+  }
+}

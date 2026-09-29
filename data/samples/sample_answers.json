@@ -1,0 +1,70 @@
+{
+  "description": "Sample student answers for EvaliSense evaluation testing. These are TYPED answers simulating what HTR output might look like. They are paired with sample rubrics for demonstration.",
+  "is_synthetic": true,
+  "answers": [
+    {
+      "id": "photo_good",
+      "rubric_file": "sample_rubric.json",
+      "quality": "good",
+      "expected_score_range": [7, 9],
+      "answer_text": "Photosynthesis is the process by which green plants convert light energy into chemical energy stored in glucose. This occurs in the chloroplasts of plant cells, where chlorophyll absorbs sunlight. The process has two stages. In the light-dependent reactions, water molecules are split, producing oxygen, ATP, and NADPH. In the Calvin cycle, carbon dioxide from the air is fixed into organic molecules using the energy from ATP and NADPH. Photosynthesis is essential for life on Earth because it produces the oxygen we breathe, forms the base of food chains, and helps regulate the carbon cycle and climate.",
+      "simulated_ocr_confidence": 0.72
+    },
+    {
+      "id": "photo_partial",
+      "rubric_file": "sample_rubric.json",
+      "quality": "partial",
+      "expected_score_range": [4, 6],
+      "answer_text": "Photosynthesis is how plants make food from sunlight. They use their leaves to capture light energy and turn it into glucose for energy. Plants need water and carbon dioxide for this process. It is important because it gives us oxygen to breathe and provides food for animals.",
+      "simulated_ocr_confidence": 0.65
+    },
+    {
+      "id": "photo_poor",
+      "rubric_file": "sample_rubric.json",
+      "quality": "poor",
+      "expected_score_range": [1, 3],
+      "answer_text": "Plants need water and sun to grow. They are green because of their leaves. They give us food.",
+      "simulated_ocr_confidence": 0.48
+    },
+    {
+      "id": "photo_empty",
+      "rubric_file": "sample_rubric.json",
+      "quality": "empty",
+      "expected_score_range": [0, 0],
+      "answer_text": "",
+      "simulated_ocr_confidence": 0.0
+    },
+    {
+      "id": "cell_good",
+      "rubric_file": "rubric_cell_biology.json",
+      "quality": "good",
+      "expected_score_range": [7, 9],
+      "answer_text": "Animal cells contain several important organelles. The nucleus is the control centre of the cell and contains DNA, which carries genetic instructions. The cell membrane is a selectively permeable barrier that controls what enters and leaves the cell. Mitochondria are known as the powerhouses of the cell because they produce ATP through cellular respiration. The rough endoplasmic reticulum has ribosomes attached and is involved in protein synthesis, while the smooth ER synthesises lipids. The Golgi apparatus modifies and packages proteins for transport. Ribosomes are where proteins are made, and lysosomes contain digestive enzymes.",
+      "simulated_ocr_confidence": 0.75
+    },
+    {
+      "id": "cell_partial",
+      "rubric_file": "rubric_cell_biology.json",
+      "quality": "partial",
+      "expected_score_range": [4, 6],
+      "answer_text": "Animal cells have a nucleus which controls the cell and contains DNA. They also have mitochondria which give the cell energy. The cell membrane surrounds the cell and protects it. There are also ribosomes for making proteins.",
+      "simulated_ocr_confidence": 0.60
+    },
+    {
+      "id": "history_good",
+      "rubric_file": "rubric_industrial_revolution.json",
+      "quality": "good",
+      "expected_score_range": [10, 13],
+      "answer_text": "The Industrial Revolution began in Britain in the late 1700s and transformed the country from an agricultural to an industrial economy. Key causes included improvements in agriculture that freed up labour, abundant coal and iron resources, a strong banking system, and colonial trade. Important inventions included James Watt's steam engine, Hargreaves' spinning jenny, and the power loom, which revolutionised manufacturing. The revolution led to rapid urbanisation as people moved to factory towns for work. Working conditions were harsh, with long hours, low wages, and child labour being common. However, it also led to economic growth and the rise of a middle class. Trade unions eventually formed to fight for workers' rights. The revolution spread from Britain to the rest of Europe and America.",
+      "simulated_ocr_confidence": 0.68
+    },
+    {
+      "id": "physics_good",
+      "rubric_file": "rubric_newtons_laws.json",
+      "quality": "good",
+      "expected_score_range": [9, 11],
+      "answer_text": "Newton's First Law, the law of inertia, says that an object at rest stays at rest and an object in motion stays in motion with constant velocity unless acted upon by an external force. For example, a book on a table stays still until you push it. Newton's Second Law states that force equals mass times acceleration (F=ma). This means a heavier object needs more force to accelerate. For example, it's harder to push a heavy truck than a bicycle. Newton's Third Law states that for every action there is an equal and opposite reaction. For example, when you push against a wall, the wall pushes back against you with equal force.",
+      "simulated_ocr_confidence": 0.71
+    }
+  ]
+}
