@@ -37,6 +37,18 @@ data/results/*
 !data/processed/.gitkeep
 !data/results/.gitkeep
 
+# Downloaded datasets (re-download via scripts, too large for git)
+data/external/iam_lines/
+data/external/asap_handwritten/
+data/external/jorgpt_grading/
+data/external/kaggle_asag/
+data/external/cs_notes/
+data/external/gcse_exams/
+data/external/huggingface_gcse/
+data/external/**/*.png
+data/external/**/*.jpg
+data/external/**/*.zip
+
 # Hugging Face and local model caches
 .cache/
 **/.cache/huggingface/

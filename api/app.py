@@ -58,6 +58,8 @@ _frontend_dir = config.project_root / "frontend"
 if _frontend_dir.exists():
     app.mount("/static", StaticFiles(directory=str(_frontend_dir)), name="static")
 
+# Dataset images served via /api/dataset-image endpoint (see below)
+
 # In-memory store for evaluation sessions (use a DB in production)
 _sessions: dict[str, dict[str, Any]] = {}
 
@@ -371,6 +373,176 @@ async def model_info():
         "feature_names": risk_model.feature_names,
         "metrics": risk_model.metrics.to_dict() if risk_model.metrics else None,
     }
+
+
+@app.get("/api/datasets")
+async def list_datasets():
+    """Browse available datasets."""
+    external_dir = config.project_root / "data" / "external"
+    raw_dir = config.raw_dir
+    datasets = []
+
+    # External datasets
+    if external_dir.exists():
+        for d in sorted(external_dir.iterdir()):
+            if d.is_dir():
+                meta = d / "metadata.jsonl"
+                count = 0
+                if meta.exists():
+                    with open(meta, "r", encoding="utf-8") as f:
+                        count = sum(1 for _ in f)
+                else:
+                    count = len(list(d.rglob("*.png"))) + len(list(d.rglob("*.jpg")))
+
+                datasets.append({
+                    "name": d.name,
+                    "path": str(d),
+                    "sample_count": count,
+                    "has_metadata": meta.exists(),
+                    "type": "external",
+                })
+
+    # Raw uploaded images
+    if raw_dir.exists():
+        raw_images = list(raw_dir.glob("*.png")) + list(raw_dir.glob("*.jpg"))
+        if raw_images:
+            datasets.append({
+                "name": "raw_uploads",
+                "path": str(raw_dir),
+                "sample_count": len(raw_images),
+                "has_metadata": False,
+                "type": "raw",
+            })
+
+    # Sample rubrics
+    rubric_count = len(list(config.samples_dir.glob("*.json")))
+    datasets.append({
+        "name": "sample_rubrics",
+        "path": str(config.samples_dir),
+        "sample_count": rubric_count,
+        "has_metadata": False,
+        "type": "rubrics",
+    })
+
+    return {"datasets": datasets, "total": len(datasets)}
+
+
+@app.get("/api/datasets/{name}/samples")
+async def get_dataset_samples(name: str, offset: int = 0, limit: int = 20):
+    """Get samples from a specific dataset."""
+    external_dir = config.project_root / "data" / "external"
+    dataset_dir = external_dir / name
+
+    if not dataset_dir.exists():
+        raise HTTPException(404, f"Dataset '{name}' not found.")
+
+    meta_path = dataset_dir / "metadata.jsonl"
+    if not meta_path.exists():
+        # No metadata — just list image files
+        images = sorted(list(dataset_dir.rglob("*.png")) + list(dataset_dir.rglob("*.jpg")))
+        total = len(images)
+        page = images[offset:offset + limit]
+        return {
+            "dataset": name,
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "samples": [{"image_file": str(p.relative_to(dataset_dir))} for p in page],
+        }
+
+    # Load metadata page
+    samples = []
+    total = 0
+    with open(meta_path, "r", encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            total += 1
+            if i >= offset and len(samples) < limit:
+                samples.append(json.loads(line.strip()))
+
+    return {
+        "dataset": name,
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "samples": samples,
+    }
+
+
+@app.post("/api/recognize-from-dataset")
+async def recognize_from_dataset(
+    dataset: str = Form(...),
+    image_file: str = Form(...),
+):
+    """Run HTR directly on a dataset image (no upload needed)."""
+    data_root = config.project_root / "data"
+    image_path = data_root / image_file
+
+    if not image_path.exists():
+        # Try external prefix
+        image_path = data_root / "external" / dataset / image_file
+
+    if not image_path.exists():
+        raise HTTPException(404, f"Image not found: {image_file}")
+
+    session_id = str(uuid.uuid4())[:12]
+
+    try:
+        pipeline = _get_htr()
+        import cv2 as _cv2
+        image = _cv2.imread(str(image_path), _cv2.IMREAD_COLOR)
+        if image is None:
+            raise HTTPException(400, f"Could not read image: {image_path}")
+
+        # For pre-segmented line images (IAM), recognize directly
+        recognized = pipeline.recognizer.recognize(image, line_number=1)
+
+        htr_result = {
+            "full_text": recognized.text,
+            "lines": [{"line_number": 1, "text": recognized.text,
+                        "confidence": recognized.confidence}],
+            "average_confidence": recognized.confidence,
+            "metadata": {"model": getattr(pipeline.recognizer, "model_name", None),
+                          "source": f"dataset:{dataset}", "image_file": image_file},
+        }
+
+        _sessions[session_id] = {
+            "session_id": session_id,
+            "original_path": str(image_path),
+            "filename": image_path.name,
+            "status": "recognized",
+            "htr_result": htr_result,
+            "created_at": time.time(),
+        }
+
+        logger.info("Dataset HTR: %s → \"%s\" (conf=%.3f)",
+                     image_path.name, recognized.text, recognized.confidence or 0)
+        return {
+            "session_id": session_id,
+            "status": "recognized",
+            "text": recognized.text,
+            "confidence": recognized.confidence,
+            "image_file": image_file,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Dataset HTR failed: %s", exc)
+        raise HTTPException(500, f"HTR failed: {exc}")
+
+
+@app.get("/api/dataset-image/{dataset}/{path:path}")
+async def serve_dataset_image(dataset: str, path: str):
+    """Serve a dataset image file."""
+    external_dir = config.project_root / "data" / "external"
+    image_path = (external_dir / dataset / path).resolve()
+
+    # Prevent path traversal
+    if not str(image_path).startswith(str(external_dir.resolve())):
+        raise HTTPException(403, "Access denied.")
+    if not image_path.exists():
+        raise HTTPException(404, "Image not found.")
+
+    return FileResponse(str(image_path))
 
 
 # ──────────────────────────────────────────────────────────────────────
