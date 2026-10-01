@@ -130,24 +130,50 @@ EvaliSense/
 
 ## Installation
 
-### 1. Create Environment
+### Quick Start (Recommended)
+
+Clone the repo and run the setup script — it creates the virtual environment, installs all dependencies, and verifies everything:
+
+**Windows:**
+```powershell
+git clone https://github.com/deekshithasrinivas22/EvaliSense.git
+cd EvaliSense
+setup.bat
+```
+
+**Linux / macOS:**
 ```bash
+git clone https://github.com/deekshithasrinivas22/EvaliSense.git
+cd EvaliSense
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+1. ✅ Create a `.venv` virtual environment
+2. ✅ Install all Python dependencies from `requirements.txt`
+3. ✅ Create required data directories
+4. ✅ Verify all modules load correctly
+
+### Manual Installation
+
+If you prefer to set up manually:
+
+```bash
+# 1. Create and activate virtual environment
 python -m venv .venv
 .venv\Scripts\activate        # Windows
 # source .venv/bin/activate   # Linux/macOS
-```
 
-### 2. Install Dependencies
-```bash
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Verify Installation
-```bash
+# 3. Verify
 python -c "from config import config; print(config.project_root)"
 python -c "from preprocessing import ImagePreprocessor; print('OK')"
 python -c "from evaluation import AnswerEvaluator; print('OK')"
 ```
+
 
 ## Running the Project
 
