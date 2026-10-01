@@ -1,0 +1,50 @@
+{
+  "question": "Explain the process of photosynthesis and its importance for life on Earth.",
+  "max_marks": 10,
+  "reference_answer": "Photosynthesis is the biological process by which green plants, algae, and certain bacteria convert light energy into chemical energy stored in glucose. It occurs primarily in the chloroplasts of plant cells, using chlorophyll to absorb sunlight. The process involves two main stages: the light-dependent reactions and the Calvin cycle (light-independent reactions). In the light-dependent reactions, water molecules are split, releasing oxygen as a byproduct, and producing ATP and NADPH. In the Calvin cycle, carbon dioxide from the atmosphere is fixed into organic molecules using the energy from ATP and NADPH. Photosynthesis is essential for life on Earth because it produces oxygen for aerobic organisms, forms the base of most food chains, and removes carbon dioxide from the atmosphere, helping to regulate climate.",
+  "criteria": [
+    {
+      "id": "c1",
+      "description": "Explains that photosynthesis converts light energy into chemical energy",
+      "marks": 2,
+      "keywords": ["light energy", "chemical energy", "convert", "glucose", "sunlight"]
+    },
+    {
+      "id": "c2",
+      "description": "Mentions chloroplasts or chlorophyll as the site or pigment involved",
+      "marks": 1,
+      "keywords": ["chloroplast", "chlorophyll", "green pigment"]
+    },
+    {
+      "id": "c3",
+      "description": "Describes light-dependent reactions including water splitting and oxygen release",
+      "marks": 2,
+      "keywords": ["light-dependent", "water", "split", "oxygen", "ATP", "NADPH"]
+    },
+    {
+      "id": "c4",
+      "description": "Describes the Calvin cycle or light-independent reactions and carbon fixation",
+      "marks": 2,
+      "keywords": ["Calvin cycle", "light-independent", "carbon dioxide", "carbon fixation", "CO2"]
+    },
+    {
+      "id": "c5",
+      "description": "Explains ecological importance: oxygen production, food chains, or carbon cycle",
+      "marks": 2,
+      "keywords": ["oxygen", "food chain", "carbon cycle", "ecosystem", "aerobic", "climate"]
+    },
+    {
+      "id": "c6",
+      "description": "Uses appropriate scientific terminology and clear explanation",
+      "marks": 1,
+      "keywords": ["photosynthesis", "reaction", "process", "energy"]
+    }
+  ],
+  "metadata": {
+    "subject": "Biology",
+    "topic": "Photosynthesis",
+    "level": "GCSE / O-Level",
+    "source": "Sample rubric for EvaliSense demonstration",
+    "is_synthetic": true
+  }
+}

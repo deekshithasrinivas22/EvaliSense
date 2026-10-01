@@ -54,9 +54,7 @@ Final Examiner Mark
 EvaliSense/
 ├── config.py                          # Project-wide configuration
 ├── requirements.txt                   # Python dependencies
-├── preprocessing_demo.py              # Preprocessing CLI demo
-├── htr_demo.py                        # HTR CLI demo
-├── generate_synthetic_dataset.py      # Synthetic dataset generator
+├── run_demo.py                        # End-to-end demo runner
 ├── train_risk_model.py                # Model training script
 │
 ├── preprocessing/                     # Image preprocessing module
@@ -89,6 +87,25 @@ EvaliSense/
 │   ├── style.css                      # Design system
 │   └── app.js                         # Frontend logic
 │
+├── scripts/                           # Utility scripts
+│   ├── download_datasets.py           # HuggingFace dataset downloader
+│   ├── download_exam_datasets.py      # Additional exam dataset sources
+│   ├── generate_synthetic_dataset.py  # Synthetic training data generator
+│   ├── create_test_images.py          # Generate test handwriting images
+│   └── benchmark_htr.py              # HTR CER/WER benchmarking
+│
+├── notebooks/                         # Research notebooks (10 total)
+│   ├── 01_data_exploration.ipynb      # Dataset inventory & analysis
+│   ├── 02_preprocessing_pipeline.ipynb # Image preprocessing demo
+│   ├── 03_htr_recognition.ipynb       # TrOCR benchmarking
+│   ├── 04_answer_evaluation.ipynb     # Rubric-based evaluation
+│   ├── 05_feature_engineering.ipynb   # Feature analysis & correlation
+│   ├── 06_model_training.ipynb        # ML model comparison
+│   ├── 07_full_pipeline_demo.ipynb    # End-to-end pipeline demo
+│   ├── 08_hyperparameter_tuning.ipynb # GridSearchCV tuning
+│   ├── 09_error_analysis.ipynb        # Misclassification analysis
+│   └── 10_final_evaluation.ipynb      # Final results & reporting
+│
 ├── tests/                             # Test suite
 │   ├── test_preprocessing.py
 │   ├── test_htr.py
@@ -98,14 +115,15 @@ EvaliSense/
 │   └── test_config.py
 │
 ├── data/                              # Data directory
-│   ├── raw/                           # Raw handwritten images
-│   ├── processed/                     # Preprocessed images
-│   ├── samples/                       # Sample rubrics and datasets
-│   ├── annotations/                   # Expert annotations
-│   └── results/                       # Evaluation results
+│   ├── samples/                       # Sample rubrics, answers, synthetic data
+│   ├── raw/                           # Raw handwritten images (gitignored)
+│   ├── processed/                     # Preprocessed images (gitignored)
+│   ├── external/                      # Downloaded datasets (gitignored)
+│   ├── annotations/                   # Expert annotations (gitignored)
+│   └── results/                       # Evaluation results (gitignored)
 │
+├── trained_models/                    # Saved ML models (gitignored)
 ├── experiments/                       # Experiment tracking
-├── notebooks/                         # Exploratory notebooks
 └── utils/                             # Utility modules
     └── logging.py                     # Structured logging
 ```
@@ -140,21 +158,24 @@ uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
 
 Then open http://127.0.0.1:8000 in your browser.
 
-### Run Preprocessing Demo
+### Run End-to-End Demo
 ```bash
-python preprocessing_demo.py --input path/to/answer.jpg --output data/processed/answer_processed.png
+python run_demo.py --input path/to/answer.jpg
 ```
 
-### Run HTR Demo
+### Run Notebooks
 ```bash
-python htr_demo.py --input data/raw/test_answer.jpg --output experiments/htr_baseline/raw --debug-lines
+cd notebooks
+jupyter notebook
 ```
+
+See [notebooks/README.md](notebooks/README.md) for a detailed guide.
 
 ## Model Training
 
 ### 1. Generate Synthetic Dataset (Development)
 ```bash
-python generate_synthetic_dataset.py --output data/samples/synthetic_dataset.jsonl --count 200
+python scripts/generate_synthetic_dataset.py --output data/samples/synthetic_dataset.jsonl --count 300
 ```
 
 > ⚠️ Synthetic data is for development only. Do not present as real research results.
@@ -171,6 +192,22 @@ python train_risk_model.py --dataset data/samples/synthetic_dataset.jsonl --comp
 ### 3. Train with Custom Threshold
 ```bash
 python train_risk_model.py --dataset data/samples/synthetic_dataset.jsonl --compare --error-threshold 1.5
+```
+
+## Dataset Preparation
+
+```bash
+# Download HuggingFace GCSE dataset
+python scripts/download_datasets.py --skip-kaggle --skip-synthetic --skip-images
+
+# Download additional exam datasets
+python scripts/download_exam_datasets.py
+
+# Generate test handwriting images
+python scripts/create_test_images.py
+
+# Run HTR benchmark
+python scripts/benchmark_htr.py
 ```
 
 ## Running Tests
@@ -289,13 +326,6 @@ When the server is running, interactive API docs are available at:
                                     │  Examiner   │
                                     │  Review     │
                                     └─────────────┘
-```
-
-### Future Cloud Architecture
-```
-Frontend → Backend API → Preprocessing Service → HTR Service
-                       → Evaluation Service → Risk Prediction Service
-                       → Database / Object Storage
 ```
 
 ## Examiner Authority

@@ -28,4 +28,10 @@ pytest
 pytest-cov
 
 # ─── Utilities ───
-# (no additional utilities required)
+matplotlib
+seaborn
+pandas
+
+# ─── Notebooks ───
+jupyter
+jupyterlab

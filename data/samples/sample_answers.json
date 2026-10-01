@@ -4,7 +4,7 @@
   "answers": [
     {
       "id": "photo_good",
-      "rubric_file": "sample_rubric.json",
+      "rubric_file": "rubric_biology_photosynthesis.json",
       "quality": "good",
       "expected_score_range": [7, 9],
       "answer_text": "Photosynthesis is the process by which green plants convert light energy into chemical energy stored in glucose. This occurs in the chloroplasts of plant cells, where chlorophyll absorbs sunlight. The process has two stages. In the light-dependent reactions, water molecules are split, producing oxygen, ATP, and NADPH. In the Calvin cycle, carbon dioxide from the air is fixed into organic molecules using the energy from ATP and NADPH. Photosynthesis is essential for life on Earth because it produces the oxygen we breathe, forms the base of food chains, and helps regulate the carbon cycle and climate.",
@@ -12,7 +12,7 @@
     },
     {
       "id": "photo_partial",
-      "rubric_file": "sample_rubric.json",
+      "rubric_file": "rubric_biology_photosynthesis.json",
       "quality": "partial",
       "expected_score_range": [4, 6],
       "answer_text": "Photosynthesis is how plants make food from sunlight. They use their leaves to capture light energy and turn it into glucose for energy. Plants need water and carbon dioxide for this process. It is important because it gives us oxygen to breathe and provides food for animals.",
@@ -20,7 +20,7 @@
     },
     {
       "id": "photo_poor",
-      "rubric_file": "sample_rubric.json",
+      "rubric_file": "rubric_biology_photosynthesis.json",
       "quality": "poor",
       "expected_score_range": [1, 3],
       "answer_text": "Plants need water and sun to grow. They are green because of their leaves. They give us food.",
@@ -28,7 +28,7 @@
     },
     {
       "id": "photo_empty",
-      "rubric_file": "sample_rubric.json",
+      "rubric_file": "rubric_biology_photosynthesis.json",
       "quality": "empty",
       "expected_score_range": [0, 0],
       "answer_text": "",

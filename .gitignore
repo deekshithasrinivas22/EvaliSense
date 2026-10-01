@@ -68,3 +68,6 @@ dist/
 # Secrets
 .env
 .env.*
+
+# One-time scripts (not part of deliverable)
+cleanup_project.py
