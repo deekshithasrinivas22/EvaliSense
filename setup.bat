@@ -107,6 +107,12 @@ if %ERRORLEVEL% NEQ 0 echo   [FAIL] opencv
 python -c "import fastapi; print(f'  [OK] fastapi       — version {fastapi.__version__}')"
 if %ERRORLEVEL% NEQ 0 echo   [FAIL] fastapi
 
+REM ─── Check Assets ───
+echo.
+echo [INFO]  Checking project assets...
+echo.
+python scripts\download_assets.py --check
+
 REM ─── Done ───
 echo.
 echo ============================================================
@@ -124,10 +130,8 @@ echo       python train_risk_model.py --compare    # Train models
 echo       uvicorn api.app:app --reload            # Start API server
 echo       cd notebooks ^& jupyter notebook        # Open notebooks
 echo.
-echo   First-time data setup:
+echo   First-time asset setup (generate test images + download AI models):
 echo.
-echo       python scripts\generate_synthetic_dataset.py --count 300
-echo       python scripts\create_test_images.py
-echo       python scripts\download_datasets.py --skip-kaggle
+echo       python scripts\download_assets.py
 echo.
 echo ============================================================

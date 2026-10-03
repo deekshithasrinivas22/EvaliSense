@@ -56,9 +56,12 @@ data/external/**/*.zip
 experiments/htr_baseline/
 !data/annotations/.gitkeep
 
-# Trained models and synthetic data
-trained_models/
-data/samples/*.jsonl
+# Trained models — committed to git (risk model is ~28KB)
+# If models grow large, move them to GitHub Releases and use scripts/download_assets.py
+# trained_models/   <-- intentionally NOT excluded; models are lightweight
+
+# Synthetic dataset — committed to git (~278KB)
+# data/samples/*.jsonl   <-- intentionally NOT excluded; small enough for git
 
 # Build / packaging
 build/

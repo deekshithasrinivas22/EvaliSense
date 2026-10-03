@@ -74,6 +74,12 @@ python3 -c "import sklearn; print(f'  [OK] scikit-learn  — version {sklearn.__
 python3 -c "import cv2; print(f'  [OK] opencv        — version {cv2.__version__}')" 2>/dev/null || echo "  [FAIL] opencv"
 python3 -c "import fastapi; print(f'  [OK] fastapi       — version {fastapi.__version__}')" 2>/dev/null || echo "  [FAIL] fastapi"
 
+# ─── Check Assets ───
+echo ""
+echo "[INFO]  Checking project assets..."
+echo ""
+python3 scripts/download_assets.py --check
+
 # ─── Done ───
 echo ""
 echo "============================================================"
@@ -91,10 +97,9 @@ echo "      python train_risk_model.py --compare    # Train models"
 echo "      uvicorn api.app:app --reload            # Start API server"
 echo "      cd notebooks && jupyter notebook        # Open notebooks"
 echo ""
-echo "  First-time data setup:"
+echo "  First-time asset setup (generate test images + download AI models):"
 echo ""
-echo "      python scripts/generate_synthetic_dataset.py --count 300"
-echo "      python scripts/create_test_images.py"
-echo "      python scripts/download_datasets.py --skip-kaggle"
+echo "      python scripts/download_assets.py"
 echo ""
 echo "============================================================"
+
