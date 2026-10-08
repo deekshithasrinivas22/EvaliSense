@@ -347,68 +347,101 @@ When the server is running, interactive API docs are available at:
 | `POST` | `/api/evaluate/{id}` | Evaluate against rubric |
 | `POST` | `/api/predict-risk/{id}` | Predict grading error risk |
 | `POST` | `/api/submit-review/{id}` | Submit examiner's final mark |
-| `GET`  | `/api/session/{id}` | Get session details |
-| `GET`  | `/api/model-info` | Risk model information |
-| `GET`  | `/api/health` | Health check |
+### Role-Based Examination Management Endpoints
 
-## Architecture
+| Method | Endpoint | Description | Role Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/auth/login` | Authenticate and obtain JWT token | Public |
+| `GET`  | `/api/auth/me` | Current authenticated user profile | Any Authenticated |
+| `GET`/`POST` | `/api/roles` | Role management (system & custom) | HOD |
+| `GET`/`POST` | `/api/users` | User management & password updates | HOD |
+| `GET`/`POST` | `/api/departments` | Department CRUD | HOD |
+| `GET`/`POST` | `/api/sections` | Academic section CRUD | HOD |
+| `GET`/`POST` | `/api/students` | Student records & enrollment | HOD / Teacher |
+| `GET`/`POST` | `/api/subjects` | Academic course/subject registry | HOD |
+| `POST` | `/api/teacher-subjects` | Teacher course allocation | HOD |
+| `GET`/`POST` | `/api/exams` | Examination creation & status | HOD |
+| `GET`/`POST` | `/api/exams/{id}/questions` | Question and rubric builder | HOD |
+| `POST` | `/api/scripts/upload` | Upload handwritten script with blur validation | Scanner / HOD |
+| `GET`  | `/api/scanner/issues` | Scan-quality error queue & resolution | Scanner / HOD |
+| `POST` | `/api/scripts/{id}/evaluate` | Trigger TrOCR + Sentence-BERT + Risk Model pipeline | Scanner / HOD |
+| `GET`  | `/api/teacher/assignments` | Workload-balanced risky answer review queue | Teacher (Strictly Assigned) |
+| `POST` | `/api/teacher/assignments/{id}/review` | Teacher mark override, notes, and approval | Teacher (Assigned Only) |
+| `GET`  | `/api/students/{id}/results` | Authoritative aggregated exam marks & rankings | Authenticated |
+| `GET`  | `/api/analytics/overview` | Department-wide evaluation and risk metrics | Authenticated |
+
+### Legacy Single-Answer Endpoints (Preserved)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/upload` | Upload image for quick demo evaluation |
+| `POST` | `/api/preprocess` | Run preprocessing on uploaded image |
+| `POST` | `/api/htr` | Run TrOCR line segmentation and recognition |
+| `POST` | `/api/evaluate` | Evaluate extracted text against rubric |
+| `POST` | `/api/predict-risk` | Predict grading risk using ML model |
+| `POST` | `/api/review` | Examiner mark submission |
+| `GET`  | `/api/session/{id}` | Get demo session details |
+| `GET`  | `/api/model-info` | Risk model information and metrics |
+| `GET`  | `/api/health` | System health check |
+
+## Architecture & System Workflow
 
 ```
-                    ┌──────────────┐
-                    │   Frontend   │
-                    │ (HTML/CSS/JS)│
-                    └──────┬───────┘
-                           │ HTTP
-                    ┌──────▼───────┐
-                    │  FastAPI     │
-                    │  Backend     │
-                    └──────┬───────┘
-            ┌──────────────┼──────────────┐
-            │              │              │
-    ┌───────▼─────┐ ┌──────▼──────┐ ┌─────▼──────┐
-    │Preprocessing│ │ HTR Pipeline│ │ Evaluation  │
-    │  Module     │ │ (TrOCR)     │ │  Module     │
-    └─────────────┘ └─────────────┘ └──────┬──────┘
-                                           │
-                                    ┌──────▼──────┐
-                                    │  Feature    │
-                                    │ Extraction  │
-                                    └──────┬──────┘
-                                           │
-                                    ┌──────▼──────┐
-                                    │  Risk Model │
-                                    │ (sklearn)   │
-                                    └──────┬──────┘
-                                           │
-                                    ┌──────▼──────┐
-                                    │  Examiner   │
-                                    │  Review     │
-                                    └─────────────┘
+                        ┌──────────────────────────────────────────────┐
+                        │              Frontend Web UI                 │
+                        │    (HOD Panel | Teacher Review | Scanner)    │
+                        └──────────────────────┬───────────────────────┘
+                                               │ REST + Bearer JWT
+                        ┌──────────────────────▼───────────────────────┐
+                        │          FastAPI Backend (app.py)            │
+                        │   RBAC Dependencies: HOD / TEACHER / SCANNER │
+                        └──────┬───────────────────────────────┬───────┘
+                               │                               │
+            ┌──────────────────▼───────────┐     ┌─────────────▼─────────────┐
+            │   SQLite Persistent Storage  │     │     AI Evaluation Core    │
+            │   (SQLAlchemy ORM + PRAGMA)  │     │  (Preserved & Integrated) │
+            │  - Roles & Users (Argon2)    │     │  - ImagePreprocessor      │
+            │  - Academic Hierarchy        │     │  - TrOCR HTR Pipeline     │
+            │  - Answer Scripts & Answers  │     │  - S-BERT Rubric Scorer   │
+            │  - AI Marks & 16 Risk Feats  │     │  - 16-Feature Extractor   │
+            │  - Workload Teacher Assign   │     │  - GradingRiskModel (SVM) │
+            │  - Final Marks & Results     │     └─────────────┬─────────────┘
+            └──────────────────────────────┘                   │
+                                                               ▼
+                                                ┌─────────────────────────────┐
+                                                │    Workload Load Balancer   │
+                                                │ High-Risk → Assigned Teacher│
+                                                │ Low-Risk  → Auto-Accepted   │
+                                                └─────────────────────────────┘
 ```
+
+## Seeded Default Accounts
+
+For quick local testing and development, database initialization automatically seeds the following credentials:
+
+| Role | Username | Password | Purpose |
+|------|----------|----------|---------|
+| **HOD** | `admin` | `Admin@123` | Full academic, user, exam, rubric, and system management |
+| **TEACHER** | `teacher1` | `Teacher@123` | Workload-balanced evaluation reviews for assigned subjects |
+| **TEACHER** | `teacher2` | `Teacher@123` | Additional faculty for balanced distribution |
+| **SCANNER** | `scanner1` | `Scanner@123` | Answer sheet batch upload and rescan error resolution |
 
 ## Examiner Authority
-**The examiner remains the final authority.** EvaliSense produces preliminary AI marks and risk predictions that serve as decision-support for the human examiner. The examiner can approve, modify, or override any AI-generated evaluation.
+**The human examiner remains the final authority.** EvaliSense produces preliminary AI marks and risk predictions that serve as decision-support for educators. High-risk evaluations are balanced and assigned to certified faculty for manual review, ensuring auditability and pedagogical rigor.
 
-## Limitations
-- HTR accuracy depends on handwriting quality and image conditions.
-- Semantic evaluation uses general-purpose embeddings, not domain-specific ones.
-- The risk model requires sufficient ground-truth data for meaningful results.
-- Synthetic data is for development only and does not represent real performance.
-- CPU-only execution may be slow for large batches.
+## Running Locally
 
-## Future Improvements
-- Domain-specific fine-tuning of the embedding model.
-- Active learning for risk model improvement.
-- PDF and multi-page document support.
-- Batch evaluation mode.
-- Database integration for persistent storage.
-- User authentication and role-based access.
-- Deployment automation (Docker, cloud).
-
-## Important Design Decisions
-1. **Modular architecture**: Each component (preprocessing, HTR, evaluation, features, models, API) is independently testable.
-2. **Lazy model loading**: Models are loaded on first use and cached to avoid unnecessary startup time.
-3. **Heuristic fallback**: When no trained ML model exists, a rule-based heuristic provides risk estimates.
-4. **Ground-truth collection**: Every examiner review creates a training record for future model improvement.
-5. **Configurable error threshold**: The grading-error threshold is configurable, not hardcoded.
-6. **CPU-first design**: All components are optimised for CPU execution.
+1. **Activate virtual environment**:
+   ```bash
+   .venv\Scripts\activate
+   ```
+2. **Run tests**:
+   ```bash
+   python -m pytest tests/
+   ```
+3. **Start backend server**:
+   ```bash
+   uvicorn api.app:app --host 127.0.0.1 --port 8000 --reload
+   ```
+4. **Open application in browser**:
+   Navigate to [http://127.0.0.1:8000](http://127.0.0.1:8000) to access the role-based dashboard, scanner workstation, and teacher review workspace.

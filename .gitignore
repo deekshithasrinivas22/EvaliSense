@@ -33,9 +33,11 @@ data/raw/*
 data/processed/*
 data/annotations/*
 data/results/*
+data/storage/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/results/.gitkeep
+!data/storage/.gitkeep
 
 # Downloaded datasets (re-download via scripts, too large for git)
 data/external/iam_lines/

@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="EvaliSense — AI-Powered Handwritten Examination Evaluation with ML-Based Grading Error Prediction. An examiner-assistance system.">
-    <title>EvaliSense — AI-Powered Examination Evaluation</title>
+    <meta name="description" content="EvaliSense — AI-Powered Handwritten Examination Evaluation Management System">
+    <title>EvaliSense — Examination Evaluation Management</title>
+    <link rel="icon" href="data:,">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <!-- ───────────── Sidebar ───────────── -->
@@ -23,106 +24,659 @@
             </div>
             <span class="brand-text">EvaliSense</span>
         </div>
-        <ul class="nav-links">
-            <li><a href="#" class="nav-link active" data-page="dashboard" id="nav-dashboard">
-                <span class="nav-icon">📊</span> Dashboard
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="evaluate" id="nav-evaluate">
-                <span class="nav-icon">📝</span> Evaluate Answer
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="review" id="nav-review">
-                <span class="nav-icon">👁️</span> Examiner Review
-            </a></li>
-            <li><a href="#" class="nav-link" data-page="model" id="nav-model">
-                <span class="nav-icon">🤖</span> Model Info
-            </a></li>
+
+        <ul class="nav-links" id="nav-links">
+            <!-- Dynamically populated based on active role -->
         </ul>
+
         <div class="sidebar-footer">
-            <p class="sidebar-note">The human examiner<br>is the final authority.</p>
+            <p class="sidebar-note">Human-in-the-Loop<br>Academic Examination AI</p>
         </div>
     </nav>
 
     <!-- ───────────── Main Content ───────────── -->
     <main class="main-content" id="main-content">
+        <!-- Topbar Header -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h3 id="topbar-user-greeting" style="font-size: 1.05rem; margin: 0;">Welcome to EvaliSense</h3>
+                <span id="topbar-role-badge" class="topbar-role-badge role-badge-guest">Guest</span>
+            </div>
+            <div class="topbar-right">
+                <button class="notif-btn" id="btn-toggle-notifs" title="Notifications">
+                    🔔 <span class="notif-badge" id="notif-count-badge" style="display: none;">0</span>
+                </button>
+                <button class="btn btn-primary" id="btn-login-open" style="font-size: 0.85rem; padding: 0.45rem 1rem;">Sign In</button>
+                <button class="btn btn-secondary" id="btn-logout" style="display: none; font-size: 0.85rem; padding: 0.45rem 1rem;">Logout</button>
+            </div>
+        </header>
 
-        <!-- ═══════ Dashboard Page ═══════ -->
+        <!-- ═══════ Public / Guest Dashboard ═══════ -->
         <section class="page active" id="page-dashboard">
             <header class="page-header">
-                <h1>Dashboard</h1>
-                <p class="page-subtitle">Overview of EvaliSense evaluation system</p>
+                <h1>Examination Evaluation System</h1>
+                <p class="page-subtitle">Role-Based Academic Platform with TrOCR HTR, Rubric Scoring & ML Risk Prediction</p>
             </header>
 
             <div class="stats-grid">
-                <div class="stat-card" id="stat-sessions">
-                    <div class="stat-value">0</div>
-                    <div class="stat-label">Active Sessions</div>
+                <div class="stat-card" id="stat-api-status">
+                    <div class="stat-value">✓ Online</div>
+                    <div class="stat-label">System Status</div>
+                </div>
+                <div class="stat-card" id="stat-active-role">
+                    <div class="stat-value" id="display-active-role">Guest</div>
+                    <div class="stat-label">Active Role</div>
                 </div>
                 <div class="stat-card" id="stat-model-status">
-                    <div class="stat-value">—</div>
-                    <div class="stat-label">Risk Model</div>
-                </div>
-                <div class="stat-card" id="stat-api-status">
-                    <div class="stat-value">—</div>
-                    <div class="stat-label">API Status</div>
+                    <div class="stat-value">Loaded</div>
+                    <div class="stat-label">Risk Predictor</div>
                 </div>
             </div>
 
-            <div class="card workflow-card">
-                <h2>Evaluation Workflow</h2>
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2>System Overview & Roles</h2>
+                <p style="margin-bottom: 1rem;">EvaliSense is an AI-assisted handwritten examination evaluation management system with full human-in-the-loop review. Sign in using your role credentials below to access role-specific workflows.</p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                        <h3 style="color: #4338ca;">🏛️ HOD / Administrator</h3>
+                        <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Manages users, custom roles, departments, sections, students, subjects, exams, answer keys, rubrics, and inspects results.</p>
+                        <button class="btn btn-secondary" onclick="quickLogin('admin', 'Admin@123')">Sign in as HOD</button>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                        <h3 style="color: #15803d;">👩‍🏫 Teacher / Examiner</h3>
+                        <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Inspects assigned high-risk answers side-by-side with handwriting image, OCR text, rubric, and submits final marks.</p>
+                        <button class="btn btn-secondary" onclick="quickLogin('teacher1', 'Teacher@123')">Sign in as Teacher</button>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                        <h3 style="color: #b45309;">📠 Scanner Operator</h3>
+                        <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Uploads answer sheets, monitors image quality validation, blur detection, OCR confidence, and manages rescans.</p>
+                        <button class="btn btn-secondary" onclick="quickLogin('scanner1', 'Scanner@123')">Sign in as Scanner</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card workflow-card" style="margin-top: 1.5rem;">
+                <h2>End-to-End Evaluation Workflow</h2>
                 <div class="workflow-steps">
                     <div class="workflow-step">
                         <div class="step-number">1</div>
-                        <div class="step-label">Upload Image</div>
+                        <div class="step-label">Upload Script</div>
                     </div>
                     <div class="workflow-arrow">→</div>
                     <div class="workflow-step">
                         <div class="step-number">2</div>
-                        <div class="step-label">Preprocess</div>
+                        <div class="step-label">Quality Check</div>
                     </div>
                     <div class="workflow-arrow">→</div>
                     <div class="workflow-step">
                         <div class="step-number">3</div>
-                        <div class="step-label">HTR / OCR</div>
+                        <div class="step-label">TrOCR HTR</div>
                     </div>
                     <div class="workflow-arrow">→</div>
                     <div class="workflow-step">
                         <div class="step-number">4</div>
-                        <div class="step-label">Evaluate</div>
+                        <div class="step-label">Rubric AI Score</div>
                     </div>
                     <div class="workflow-arrow">→</div>
                     <div class="workflow-step">
                         <div class="step-number">5</div>
-                        <div class="step-label">Risk Prediction</div>
+                        <div class="step-label">Risk Model</div>
                     </div>
                     <div class="workflow-arrow">→</div>
                     <div class="workflow-step">
                         <div class="step-number">6</div>
-                        <div class="step-label">Examiner Review</div>
+                        <div class="step-label">Teacher Review</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ HOD Dashboard ═══════ -->
+        <section class="page" id="page-hod-overview">
+            <header class="page-header">
+                <h1>HOD Academic Management Dashboard</h1>
+                <p class="page-subtitle">Department overview, examination pipeline metrics & teacher workload distribution</p>
+            </header>
+
+            <div class="stats-grid" id="hod-metrics-grid">
+                <div class="stat-card"><div class="stat-value" id="m-students">0</div><div class="stat-label">Total Students</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-teachers">0</div><div class="stat-label">Total Teachers</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-subjects">0</div><div class="stat-label">Active Subjects</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-exams">0</div><div class="stat-label">Examinations</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-uploaded">0</div><div class="stat-label">Scripts Uploaded</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-risky" style="color: var(--color-danger);">0</div><div class="stat-label">High-Risk Answers</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-pending">0</div><div class="stat-label">Pending Reviews</div></div>
+                <div class="stat-card"><div class="stat-value" id="m-completed" style="color: var(--color-success);">0</div><div class="stat-label">Completed Reviews</div></div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Teacher Workload Balance</h2>
+                    <button class="btn btn-primary" id="btn-hod-auto-assign">⚡ Auto-Balance Risky Answers</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-teacher-workload">
+                        <thead>
+                            <tr>
+                                <th>Teacher Name</th>
+                                <th>Username</th>
+                                <th>Pending Reviews</th>
+                                <th>Completed Reviews</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="5" class="empty-state">Loading teacher workloads...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ HOD Users & Roles ═══════ -->
+        <section class="page" id="page-hod-users">
+            <header class="page-header">
+                <h1>User & Role Administration</h1>
+                <p class="page-subtitle">Manage faculty, scanning staff, custom roles, and security access</p>
+            </header>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>System Users</h2>
+                    <button class="btn btn-primary" onclick="openModal('modal-add-user')">+ Add New User</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-users">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Full Name</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Email</th>
+                                <th>Employee ID</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="8">Loading users...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Roles & Permissions</h2>
+                    <button class="btn btn-secondary" onclick="openModal('modal-add-role')">+ Create Custom Role</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-roles">
+                        <thead>
+                            <tr>
+                                <th>Role Name</th>
+                                <th>Description</th>
+                                <th>Role Type</th>
+                                <th>Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="5">Loading roles...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ HOD Academic Management ═══════ -->
+        <section class="page" id="page-hod-academics">
+            <header class="page-header">
+                <h1>Academic Structure</h1>
+                <p class="page-subtitle">Configure departments, sections, enrolled students, subjects & teacher assignments</p>
+            </header>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('tab-departments')">Departments</button>
+                <button class="tab-btn" onclick="switchTab('tab-sections')">Sections</button>
+                <button class="tab-btn" onclick="switchTab('tab-students')">Students</button>
+                <button class="tab-btn" onclick="switchTab('tab-subjects')">Subjects</button>
+                <button class="tab-btn" onclick="switchTab('tab-assignments')">Teacher Mappings</button>
+            </div>
+
+            <!-- Departments Tab -->
+            <div class="tab-content active" id="tab-departments">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Departments</h2>
+                        <button class="btn btn-primary" onclick="openModal('modal-add-dept')">+ Add Department</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-departments">
+                            <thead><tr><th>Code</th><th>Name</th><th>Status</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <h2>About EvaliSense</h2>
-                <p>EvaliSense is an <strong>examiner-assistance system</strong> — it does <em>not</em> replace teachers or examiners. The system assists with a structured, transparent, and auditable evaluation workflow in which a <strong>human examiner remains responsible for the final mark</strong>.</p>
-                <p style="margin-top: 0.75rem; opacity: 0.7;">Core research question: <em>Can machine learning predict when an AI-based handwritten examination grading system is likely to produce a significant grading error?</em></p>
+            <!-- Sections Tab -->
+            <div class="tab-content" id="tab-sections">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Sections & Classes</h2>
+                        <button class="btn btn-primary" onclick="openModal('modal-add-section')">+ Add Section</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-sections">
+                            <thead><tr><th>Section Name</th><th>Department</th><th>Semester</th><th>Academic Year</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Tab -->
+            <div class="tab-content" id="tab-students">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Students Roster</h2>
+                        <button class="btn btn-primary" onclick="openModal('modal-add-student')">+ Add Student</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-students">
+                            <thead><tr><th>USN</th><th>Name</th><th>Section</th><th>Roll #</th><th>Email</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects Tab -->
+            <div class="tab-content" id="tab-subjects">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Subjects</h2>
+                        <button class="btn btn-primary" onclick="openModal('modal-add-subject')">+ Add Subject</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-subjects">
+                            <thead><tr><th>Code</th><th>Subject Name</th><th>Semester</th><th>Max Marks</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher Mappings Tab -->
+            <div class="tab-content" id="tab-assignments">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Teacher-Subject Mappings</h2>
+                        <button class="btn btn-primary" onclick="openModal('modal-add-mapping')">+ Assign Teacher to Subject</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-teacher-subjects">
+                            <thead><tr><th>Teacher</th><th>Subject</th><th>Section</th><th>Academic Year</th><th>Action</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- ═══════ Evaluate Page ═══════ -->
-        <section class="page" id="page-evaluate">
+        <!-- ═══════ Examinations Management ═══════ -->
+        <section class="page" id="page-hod-exams">
             <header class="page-header">
-                <h1>Evaluate Handwritten Answer</h1>
-                <p class="page-subtitle">Upload, recognise, and evaluate a handwritten answer</p>
+                <h1>Examinations, Questions & Rubrics</h1>
+                <p class="page-subtitle">Schedule exams, configure question papers, answer keys, and criteria rubrics</p>
             </header>
 
-            <!-- Step 1: Upload -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Examinations</h2>
+                    <button class="btn btn-primary" onclick="openModal('modal-add-exam')">+ Create Examination</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-exams">
+                        <thead>
+                            <tr>
+                                <th>Exam Name</th>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Total Marks</th>
+                                <th>Questions</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Questions for Selected Exam -->
+            <div class="card" id="exam-questions-panel" style="margin-top: 1.5rem; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 id="exam-questions-title">Questions & Rubrics</h2>
+                    <button class="btn btn-primary" id="btn-add-question-to-exam">+ Add Question</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-questions">
+                        <thead>
+                            <tr>
+                                <th>Q #</th>
+                                <th>Question Text</th>
+                                <th>Max Marks</th>
+                                <th>Reference Answer</th>
+                                <th>Rubric</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Scripts & Evaluation Monitoring ═══════ -->
+        <section class="page" id="page-scripts-monitoring">
+            <header class="page-header">
+                <h1>Answer Scripts & Evaluation Pipeline</h1>
+                <p class="page-subtitle">Monitor scan intake, OCR recognition status, trigger AI grading, and review flags</p>
+            </header>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Uploaded Answer Scripts</h2>
+                    <button class="btn btn-secondary" onclick="loadScriptsMonitoring()">🔄 Refresh</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-all-scripts">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Exam</th>
+                                <th>Student USN</th>
+                                <th>File Name</th>
+                                <th>Scan Quality</th>
+                                <th>Status</th>
+                                <th>Uploaded By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="8">Loading answer scripts...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Teacher Dashboard ═══════ -->
+        <section class="page" id="page-teacher-dashboard">
+            <header class="page-header">
+                <h1>Teacher Evaluation Portal</h1>
+                <p class="page-subtitle">Human-in-the-loop review queue for AI-flagged high-risk student evaluations</p>
+            </header>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="t-stat-pending" style="color: var(--color-danger);">0</div>
+                    <div class="stat-label">Pending Reviews</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="t-stat-completed" style="color: var(--color-success);">0</div>
+                    <div class="stat-label">Completed Reviews</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="t-stat-subjects">0</div>
+                    <div class="stat-label">Assigned Subjects</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2>My Assigned Subjects</h2>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-teacher-my-subjects">
+                        <thead><tr><th>Subject Code</th><th>Subject Name</th><th>Section</th><th>Academic Year</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Teacher Review Queue ═══════ -->
+        <section class="page" id="page-teacher-reviews">
+            <header class="page-header">
+                <h1>Pending Risk Reviews</h1>
+                <p class="page-subtitle">Evaluations classified as HIGH grading-error risk assigned for your verification</p>
+            </header>
+
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="data-table" id="table-teacher-assignments">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Question #</th>
+                                <th>Max Marks</th>
+                                <th>AI Mark</th>
+                                <th>Risk Label</th>
+                                <th>Risk Probability</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="8">Loading review queue...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Teacher Split Evaluation Workspace ═══════ -->
+        <section class="page" id="page-teacher-eval-workspace">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Human-in-the-Loop Evaluation Review</h1>
+                    <p class="page-subtitle" id="workspace-subtitle">Reviewing High-Risk Evaluation</p>
+                </div>
+                <button class="btn btn-secondary" onclick="showPage('teacher-reviews')">← Back to Queue</button>
+            </header>
+
+            <div class="review-split">
+                <!-- Left Pane: Handwritten Script Image & OCR Text -->
+                <div class="review-pane">
+                    <h3>📷 Handwritten Answer Script</h3>
+                    <div class="review-image-container">
+                        <img id="workspace-img" src="" alt="Handwritten script preview">
+                    </div>
+                    <h4 style="margin-top: 0.5rem;">Extracted Text (TrOCR)</h4>
+                    <div style="background: var(--color-surface-2); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-family: monospace; white-space: pre-wrap; max-height: 200px; overflow-y: auto;" id="workspace-ocr-text">
+                        Loading extracted text...
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--color-text-secondary);" id="workspace-ocr-conf">
+                        OCR Confidence: —
+                    </div>
+                </div>
+
+                <!-- Right Pane: Question, Reference Answer, Rubric, AI Evaluation & Risk -->
+                <div class="review-pane">
+                    <div class="risk-alert-box" id="workspace-risk-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>AI Grading Risk: <span id="workspace-risk-label">HIGH</span></strong>
+                            <span id="workspace-risk-prob" style="font-weight: 600;">85% Error Risk</span>
+                        </div>
+                        <ul id="workspace-risk-factors" style="margin: 0.5rem 0 0 1.25rem; font-size: 0.85rem;"></ul>
+                    </div>
+
+                    <div>
+                        <h4 style="margin-bottom: 0.25rem;">Question <span id="workspace-q-num"></span> (<span id="workspace-q-max"></span> Marks)</h4>
+                        <p id="workspace-q-text" style="font-size: 0.92rem; color: var(--color-text);"></p>
+                    </div>
+
+                    <div>
+                        <h4 style="margin-bottom: 0.25rem;">Reference Answer / Marking Scheme</h4>
+                        <p id="workspace-ref-answer" style="font-size: 0.85rem; background: var(--color-surface-2); padding: 0.5rem; border-radius: var(--radius-sm); color: var(--color-text-secondary);"></p>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center; background: #eef2ff; padding: 0.75rem; border-radius: var(--radius-sm);">
+                        <div>
+                            <div style="font-size: 0.75rem; color: #4338ca; text-transform: uppercase; font-weight: 700;">AI Preliminary Mark</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #3730a3;" id="workspace-ai-mark">0.0</div>
+                        </div>
+                        <div style="margin-left: auto;">
+                            <div style="font-size: 0.75rem; color: #4338ca;">Semantic Match: <strong id="workspace-sim">0.0</strong></div>
+                            <div style="font-size: 0.75rem; color: #4338ca;">Rubric Coverage: <strong id="workspace-cov">0.0</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Teacher Final Mark Form -->
+                    <div style="border-top: 1px solid var(--color-border); padding-top: 1rem; margin-top: 0.5rem;">
+                        <h3 style="margin-bottom: 0.75rem;">Teacher Final Decision</h3>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label for="workspace-final-mark-input">Final Awarded Mark (out of <span id="workspace-max-mark-hint"></span>):</label>
+                            <input type="number" id="workspace-final-mark-input" step="0.5" min="0" style="font-size: 1.1rem; font-weight: 700; padding: 0.5rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="workspace-notes-input">Evaluation Notes / Rationale (optional):</label>
+                            <textarea id="workspace-notes-input" rows="2" placeholder="e.g. Approved with partial credit for light reaction definition"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button class="btn btn-secondary" id="btn-workspace-approve-ai">Approve AI Mark</button>
+                            <button class="btn btn-primary" id="btn-workspace-submit" style="flex: 1;">Submit Final Mark</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Scanner Dashboard ═══════ -->
+        <section class="page" id="page-scanner-dashboard">
+            <header class="page-header">
+                <h1>Scanner Operator Dashboard</h1>
+                <p class="page-subtitle">Intake management, high-resolution upload & scan quality verification</p>
+            </header>
+
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value" id="scn-stat-uploaded">0</div><div class="stat-label">Scripts Uploaded</div></div>
+                <div class="stat-card"><div class="stat-value" id="scn-stat-issues" style="color: var(--color-danger);">0</div><div class="stat-label">Rescans Required</div></div>
+                <div class="stat-card"><div class="stat-value" id="scn-stat-processed" style="color: var(--color-success);">0</div><div class="stat-label">Processed Scripts</div></div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2>Upload Examination Scripts</h2>
+                <form id="form-scanner-upload" style="margin-top: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="upload-exam-select">Select Examination *</label>
+                        <select id="upload-exam-select" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="upload-student-usn">Student USN / Roll Number (Optional)</label>
+                        <input type="text" id="upload-student-usn" placeholder="e.g. 1MS22CS001" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                    </div>
+
+                    <div class="upload-area" id="scanner-upload-area" style="margin-bottom: 1rem;">
+                        <div class="upload-icon">📤</div>
+                        <p>Drag & drop handwritten answer script here</p>
+                        <p class="upload-hint">PNG, JPG, JPEG (Max 25MB)</p>
+                        <input type="file" id="scanner-file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                    </div>
+
+                    <div id="scanner-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                        Selected: <strong id="scanner-selected-filename"></strong>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-submit-upload" style="width: 100%;">Upload & Validate Scan</button>
+                </form>
+            </div>
+
+            <!-- Scan Issues & Rescan Required -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2>Scan Quality Issues & Rescan Required</h2>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-scanner-issues">
+                        <thead>
+                            <tr>
+                                <th>Script ID</th>
+                                <th>Script Name</th>
+                                <th>Issue Type</th>
+                                <th>Description</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="7">No open scan issues.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Results Page ═══════ -->
+        <section class="page" id="page-results">
+            <header class="page-header">
+                <h1>Examination Results & Performance</h1>
+                <p class="page-subtitle">Authoritative grades, question breakdowns, class averages & student reports</p>
+            </header>
+
+            <div class="card">
+                <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+                    <label for="results-exam-select">Select Examination:</label>
+                    <select id="results-exam-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+                </div>
+
+                <div class="stats-grid" id="exam-stats-summary" style="margin-bottom: 1.5rem;">
+                    <div class="stat-card"><div class="stat-value" id="r-stat-avg">0.0</div><div class="stat-label">Class Average</div></div>
+                    <div class="stat-card"><div class="stat-value" id="r-stat-high">0.0</div><div class="stat-label">Highest Score</div></div>
+                    <div class="stat-card"><div class="stat-value" id="r-stat-pass">0%</div><div class="stat-label">Pass Percentage</div></div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="table-exam-results">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Student Name</th>
+                                <th>USN</th>
+                                <th>Total Marks</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="6">Select an examination to view results.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ Notifications Page ═══════ -->
+        <section class="page" id="page-notifications">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Notifications</h1>
+                    <p class="page-subtitle">System alerts, new reviews, and scanner quality notifications</p>
+                </div>
+                <button class="btn btn-secondary" id="btn-mark-all-read">Mark All as Read</button>
+            </header>
+
+            <div class="card">
+                <ul id="notifications-list" style="list-style: none;">
+                    <li class="empty-state">No notifications.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════ PRESERVED: Interactive AI Pipeline Demo ═══════ -->
+        <section class="page" id="page-evaluate">
+            <header class="page-header">
+                <h1>Interactive AI Pipeline Demo</h1>
+                <p class="page-subtitle">Preserved original step-by-step TrOCR, rubric scoring and risk predictor pipeline</p>
+            </header>
+
             <div class="card" id="upload-section">
                 <h2>Step 1 — Upload Image</h2>
                 <div class="upload-area" id="upload-area">
                     <div class="upload-icon">📤</div>
                     <p>Drag & drop a handwritten answer image here</p>
-                    <p class="upload-hint">or click to browse (PNG, JPG, JPEG)</p>
+                    <p class="upload-hint">or click to browse</p>
                     <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
                 </div>
                 <div class="upload-preview" id="upload-preview" style="display: none;">
@@ -131,52 +685,47 @@
                 </div>
             </div>
 
-            <!-- Step 2: Preprocess -->
             <div class="card" id="preprocess-section" style="display: none;">
                 <h2>Step 2 — Preprocessing</h2>
                 <button class="btn btn-primary" id="btn-preprocess">Run Preprocessing</button>
                 <div class="result-box" id="preprocess-result" style="display: none;"></div>
             </div>
 
-            <!-- Step 3: HTR -->
             <div class="card" id="htr-section" style="display: none;">
-                <h2>Step 3 — Handwritten Text Recognition</h2>
+                <h2>Step 3 — Handwritten Text Recognition (TrOCR)</h2>
                 <button class="btn btn-primary" id="btn-recognize">Run HTR</button>
                 <div class="result-box" id="htr-result" style="display: none;"></div>
             </div>
 
-            <!-- Step 4: Rubric + Evaluate -->
             <div class="card" id="evaluate-section" style="display: none;">
                 <h2>Step 4 — Rubric-Based Evaluation</h2>
                 <div class="rubric-input">
                     <label for="rubric-textarea">Rubric (JSON):</label>
-                    <textarea id="rubric-textarea" rows="12" placeholder="Paste rubric JSON here..."></textarea>
-                    <button class="btn btn-secondary" id="btn-load-sample-rubric">Load Sample Rubric</button>
+                    <textarea id="rubric-textarea" rows="10" placeholder="Paste rubric JSON here..."></textarea>
+                    <button class="btn btn-secondary" id="btn-load-sample-rubric" style="align-self: flex-start;">Load Sample Rubric</button>
                 </div>
                 <button class="btn btn-primary" id="btn-evaluate" style="margin-top: 1rem;">Run Evaluation</button>
                 <div class="result-box" id="eval-result" style="display: none;"></div>
             </div>
 
-            <!-- Step 5: Risk Prediction -->
             <div class="card" id="risk-section" style="display: none;">
                 <h2>Step 5 — Grading Error Risk Prediction</h2>
                 <button class="btn btn-primary" id="btn-predict-risk">Predict Risk</button>
                 <div class="result-box" id="risk-result" style="display: none;"></div>
             </div>
 
-            <!-- Step 6: Examiner Review -->
             <div class="card" id="review-section-inline" style="display: none;">
                 <h2>Step 6 — Examiner Review</h2>
                 <div class="review-form">
                     <div class="review-summary" id="review-summary"></div>
                     <div class="form-group">
                         <label for="examiner-mark-input">Final Examiner Mark:</label>
-                        <input type="number" id="examiner-mark-input" step="0.5" min="0" placeholder="Enter final mark">
+                        <input type="number" id="examiner-mark-input" step="0.5" min="0">
                         <span id="max-mark-display"></span>
                     </div>
                     <div class="form-group">
                         <label for="examiner-notes-input">Examiner Notes (optional):</label>
-                        <textarea id="examiner-notes-input" rows="3" placeholder="Add any notes..."></textarea>
+                        <textarea id="examiner-notes-input" rows="3"></textarea>
                     </div>
                     <div class="review-actions">
                         <button class="btn btn-approve" id="btn-approve">Approve AI Mark</button>
@@ -187,40 +736,244 @@
             </div>
         </section>
 
-        <!-- ═══════ Review Page ═══════ -->
-        <section class="page" id="page-review">
-            <header class="page-header">
-                <h1>Examiner Review Queue</h1>
-                <p class="page-subtitle">Sessions requiring examiner attention</p>
-            </header>
-            <div class="card">
-                <div id="review-queue">
-                    <p class="empty-state">No sessions available. Evaluate an answer first.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ═══════ Model Info Page ═══════ -->
+        <!-- ═══════ PRESERVED: Model Info Page ═══════ -->
         <section class="page" id="page-model">
             <header class="page-header">
-                <h1>Model Information</h1>
-                <p class="page-subtitle">Risk prediction model details and performance</p>
+                <h1>Model Information & Performance</h1>
+                <p class="page-subtitle">Risk prediction model architecture, feature weights, and evaluation metrics</p>
             </header>
             <div class="card" id="model-info-card">
-                <div id="model-info-content">
-                    <p class="empty-state">Loading model information...</p>
-                </div>
+                <div id="model-info-content"><p class="empty-state">Loading model information...</p></div>
             </div>
         </section>
-
     </main>
 
-    <!-- Loading overlay -->
+    <!-- ───────────── Modals ───────────── -->
+
+    <!-- Login Modal -->
+    <div class="modal-backdrop" id="modal-login" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Sign In to EvaliSense</h2>
+                <button class="modal-close" onclick="closeModal('modal-login')">&times;</button>
+            </div>
+            <form id="form-login">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="login-username">Username or Email</label>
+                    <input type="text" id="login-username" required placeholder="admin or email">
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+            </form>
+
+            <div class="quick-signin-group">
+                <span style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary);">One-Click Demo Roles:</span>
+                <button class="btn-demo" onclick="quickLogin('admin', 'Admin@123')">
+                    <span>👑 <strong>HOD / Admin</strong> (Prof. Eleanor Vance)</span>
+                    <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+                </button>
+                <button class="btn-demo" onclick="quickLogin('teacher1', 'Teacher@123')">
+                    <span>👩‍🏫 <strong>Teacher 1</strong> (Dr. Alan Turing)</span>
+                    <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+                </button>
+                <button class="btn-demo" onclick="quickLogin('teacher2', 'Teacher@123')">
+                    <span>👩‍🏫 <strong>Teacher 2</strong> (Dr. Ada Lovelace)</span>
+                    <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+                </button>
+                <button class="btn-demo" onclick="quickLogin('scanner1', 'Scanner@123')">
+                    <span>📠 <strong>Scanner</strong> (Mark Scanwell)</span>
+                    <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal-backdrop" id="modal-add-user" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Add New User</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-user')">&times;</button>
+            </div>
+            <form id="form-add-user">
+                <div class="form-group"><label>Role</label><select id="user-role-select" required></select></div>
+                <div class="form-group"><label>Full Name</label><input type="text" id="user-fullname" required placeholder="e.g. Dr. John Doe"></div>
+                <div class="form-group"><label>Username</label><input type="text" id="user-username" required placeholder="johndoe"></div>
+                <div class="form-group"><label>Email</label><input type="email" id="user-email" required placeholder="johndoe@evalisense.edu"></div>
+                <div class="form-group"><label>Employee ID</label><input type="text" id="user-empid" placeholder="EMP-001"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="user-password" required placeholder="Min 6 characters"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create User</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Custom Role Modal -->
+    <div class="modal-backdrop" id="modal-add-role" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Create Custom Role</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-role')">&times;</button>
+            </div>
+            <form id="form-add-role">
+                <div class="form-group"><label>Role Name</label><input type="text" id="role-name" required placeholder="e.g. EXAM_CONTROLLER"></div>
+                <div class="form-group"><label>Description</label><textarea id="role-desc" rows="2" placeholder="Responsibilities of this role"></textarea></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Role</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Department Modal -->
+    <div class="modal-backdrop" id="modal-add-dept" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Add Department</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-dept')">&times;</button>
+            </div>
+            <form id="form-add-dept">
+                <div class="form-group"><label>Department Code</label><input type="text" id="dept-code" required placeholder="e.g. ME"></div>
+                <div class="form-group"><label>Department Name</label><input type="text" id="dept-name" required placeholder="Mechanical Engineering"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Department</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Section Modal -->
+    <div class="modal-backdrop" id="modal-add-section" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Add Section / Class</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-section')">&times;</button>
+            </div>
+            <form id="form-add-section">
+                <div class="form-group"><label>Department</label><select id="sec-dept-select" required></select></div>
+                <div class="form-group"><label>Section Name</label><input type="text" id="sec-name" required placeholder="e.g. CSE-B"></div>
+                <div class="form-group"><label>Semester</label><input type="number" id="sec-sem" min="1" max="10" required value="5"></div>
+                <div class="form-group"><label>Academic Year</label><input type="text" id="sec-year" required value="2026-2027"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Section</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal-backdrop" id="modal-add-student" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Enroll Student</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-student')">&times;</button>
+            </div>
+            <form id="form-add-student">
+                <div class="form-group"><label>USN (Unique Identifier)</label><input type="text" id="stud-usn" required placeholder="1MS22CS010"></div>
+                <div class="form-group"><label>Student Full Name</label><input type="text" id="stud-name" required placeholder="John Student"></div>
+                <div class="form-group"><label>Section</label><select id="stud-sec-select" required></select></div>
+                <div class="form-group"><label>Roll Number (optional)</label><input type="text" id="stud-roll" placeholder="10"></div>
+                <div class="form-group"><label>Email (optional)</label><input type="email" id="stud-email" placeholder="student@evalisense.edu"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Enroll Student</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Subject Modal -->
+    <div class="modal-backdrop" id="modal-add-subject" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Add Subject</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-subject')">&times;</button>
+            </div>
+            <form id="form-add-subject">
+                <div class="form-group"><label>Subject Code</label><input type="text" id="sub-code" required placeholder="CS502"></div>
+                <div class="form-group"><label>Subject Name</label><input type="text" id="sub-name" required placeholder="Database Management Systems"></div>
+                <div class="form-group"><label>Department</label><select id="sub-dept-select" required></select></div>
+                <div class="form-group"><label>Semester</label><input type="number" id="sub-sem" min="1" max="10" required value="5"></div>
+                <div class="form-group"><label>Maximum Marks</label><input type="number" id="sub-marks" min="1" required value="100"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Subject</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Teacher-Subject Mapping Modal -->
+    <div class="modal-backdrop" id="modal-add-mapping" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Assign Teacher to Subject</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-mapping')">&times;</button>
+            </div>
+            <form id="form-add-mapping">
+                <div class="form-group"><label>Teacher</label><select id="map-teacher-select" required></select></div>
+                <div class="form-group"><label>Subject</label><select id="map-subject-select" required></select></div>
+                <div class="form-group"><label>Section (Optional)</label><select id="map-section-select"></select></div>
+                <div class="form-group"><label>Academic Year</label><input type="text" id="map-year" value="2026-2027"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Mapping</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Exam Modal -->
+    <div class="modal-backdrop" id="modal-add-exam" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Create Examination</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-exam')">&times;</button>
+            </div>
+            <form id="form-add-exam">
+                <div class="form-group"><label>Subject</label><select id="exam-subject-select" required></select></div>
+                <div class="form-group"><label>Exam Name</label><input type="text" id="exam-name" required placeholder="Midterm Examination 2"></div>
+                <div class="form-group"><label>Exam Type</label><select id="exam-type"><option value="INTERNAL">Internal Assessment</option><option value="SEMESTER">Semester Final</option><option value="QUIZ">Quiz / Test</option></select></div>
+                <div class="form-group"><label>Total Marks</label><input type="number" id="exam-marks" required value="10"></div>
+                <div class="form-group"><label>Date (YYYY-MM-DD)</label><input type="date" id="exam-date"></div>
+                <div class="form-group"><label>Academic Year</label><input type="text" id="exam-year" value="2026-2027"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Schedule Exam</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Question Modal -->
+    <div class="modal-backdrop" id="modal-add-question" style="display: none;">
+        <div class="modal-card" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2>Add Question & Rubric</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-question')">&times;</button>
+            </div>
+            <form id="form-add-question">
+                <input type="hidden" id="q-exam-id">
+                <div class="form-group"><label>Question Number</label><input type="number" id="q-number" required value="1" min="1"></div>
+                <div class="form-group"><label>Question Text</label><textarea id="q-text" rows="2" required placeholder="State and explain Newton's second law of motion."></textarea></div>
+                <div class="form-group"><label>Max Marks</label><input type="number" id="q-marks" required value="5.0" step="0.5"></div>
+                <div class="form-group"><label>Reference Answer / Key</label><textarea id="q-ref" rows="3" placeholder="Expected student answer"></textarea></div>
+                <div class="form-group">
+                    <label>Rubric JSON (Criteria with Marks and Keywords)</label>
+                    <textarea id="q-rubric" rows="6" placeholder='{"question": "...", "max_marks": 5.0, "criteria": [{"id": "c1", "description": "...", "marks": 2.5, "keywords": ["..."]}]}'></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Question & Rubric</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rescan Script Modal -->
+    <div class="modal-backdrop" id="modal-rescan" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Rescan / Replace Script #<span id="rescan-script-id"></span></h2>
+                <button class="modal-close" onclick="closeModal('modal-rescan')">&times;</button>
+            </div>
+            <form id="form-rescan">
+                <input type="hidden" id="rescan-id">
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">Upload a sharp, clean replacement scan to resolve the scan issue and re-enter evaluation.</p>
+                <div class="form-group">
+                    <input type="file" id="rescan-file" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Upload Replacement Scan</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
     <div class="loading-overlay" id="loading-overlay" style="display: none;">
         <div class="spinner"></div>
         <p id="loading-text">Processing...</p>
     </div>
-
-    <script src="app.js"></script>
+    <script src="/static/app.js"></script>
 </body>
 </html>
