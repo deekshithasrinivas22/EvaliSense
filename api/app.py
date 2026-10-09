@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 app = FastAPI(
     title="EvaliSense API",
     description="AI-Powered Handwritten Examination Evaluation with ML-Based Grading Error Prediction",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -52,6 +52,18 @@ app.add_middleware(
 
 # Ensure data directories exist
 config.ensure_dirs()
+
+# Initialize database and seed system roles/admin on startup
+from api.database.session import init_db
+try:
+    init_db()
+except Exception as _e:
+    logger.error("Failed to initialize database: %s", _e)
+
+# Include role-based and academic routers
+from api.routes import all_routers
+for _router in all_routers:
+    app.include_router(_router)
 
 # Mount static frontend
 _frontend_dir = config.project_root / "frontend"

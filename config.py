@@ -30,6 +30,13 @@ class Config:
     results_dir: Path = field(default=None)        # type: ignore[assignment]
     models_dir: Path = field(default=None)         # type: ignore[assignment]
     experiments_dir: Path = field(default=None)     # type: ignore[assignment]
+    storage_dir: Path = field(default=None)         # type: ignore[assignment]
+    db_path: Path = field(default=None)             # type: ignore[assignment]
+
+    # ---------- authentication & security ----------
+    jwt_secret: str = "evalisense_secret_key_change_in_production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 1440
 
     # ---------- HTR ----------
     htr_model_name: str = "microsoft/trocr-base-handwritten"
@@ -72,6 +79,10 @@ class Config:
             self.models_dir = root / "trained_models"
         if self.experiments_dir is None:
             self.experiments_dir = root / "experiments"
+        if self.storage_dir is None:
+            self.storage_dir = self.data_dir / "storage"
+        if self.db_path is None:
+            self.db_path = self.data_dir / "evalisense.db"
         if self.risk_model_path is None:
             self.risk_model_path = self.models_dir / "risk_model.joblib"
 
@@ -92,6 +103,11 @@ class Config:
             "DEBUG": "debug",
             "LOG_LEVEL": "log_level",
             "LOG_FILE": "log_file",
+            "DB_PATH": "db_path",
+            "STORAGE_DIR": "storage_dir",
+            "JWT_SECRET": "jwt_secret",
+            "JWT_ALGORITHM": "jwt_algorithm",
+            "JWT_EXPIRE_MINUTES": "jwt_expire_minutes",
         }
         for env_suffix, attr in mapping.items():
             value = os.environ.get(f"{prefix}{env_suffix}")
@@ -119,6 +135,7 @@ class Config:
             self.results_dir,
             self.models_dir,
             self.experiments_dir,
+            self.storage_dir,
         ):
             d.mkdir(parents=True, exist_ok=True)
 

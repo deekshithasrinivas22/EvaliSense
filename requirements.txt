@@ -22,6 +22,9 @@ joblib
 fastapi
 uvicorn[standard]
 python-multipart
+sqlalchemy
+pyjwt
+argon2-cffi
 
 # ─── Testing ───
 pytest
