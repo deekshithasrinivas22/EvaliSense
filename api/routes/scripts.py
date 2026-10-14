@@ -26,10 +26,17 @@ def upload_script(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Upload a handwritten answer sheet (Scanner or HOD)."""
+    """Upload a handwritten answer sheet (Scanner ONLY).
+
+    HODs are explicitly blocked from uploading student answer scripts,
+    even through direct API requests. This is a hard security restriction.
+    """
     user_role = current_user.role.name if current_user.role else ""
-    if user_role not in ["SCANNER", "HOD"]:
-        raise HTTPException(status_code=403, detail="Only Scanners and HODs can upload scripts.")
+    if user_role != "SCANNER":
+        raise HTTPException(
+            status_code=403,
+            detail="Only Scanners can upload student answer scripts. HODs and other roles are restricted.",
+        )
 
     exam = db.query(Exam).filter(Exam.id == exam_id).first()
     if not exam:
@@ -140,10 +147,16 @@ def rescan(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Re-upload / replace a failed script (Scanner or HOD)."""
+    """Re-upload / replace a failed script (Scanner ONLY).
+
+    HODs are explicitly blocked from re-uploading student answer scripts.
+    """
     user_role = current_user.role.name if current_user.role else ""
-    if user_role not in ["SCANNER", "HOD"]:
-        raise HTTPException(status_code=403, detail="Only Scanners and HODs can rescan scripts.")
+    if user_role != "SCANNER":
+        raise HTTPException(
+            status_code=403,
+            detail="Only Scanners can replace or rescan student answer scripts.",
+        )
 
     script = rescan_script(db, script_id, file, user=current_user)
     return AnswerScriptResponse(**script.to_dict())

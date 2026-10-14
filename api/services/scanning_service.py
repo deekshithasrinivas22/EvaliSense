@@ -27,12 +27,12 @@ from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".pdf"}
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
 
 
 def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, dict[str, Any]]:
-    """Validate uploaded image format, size, and visual quality."""
+    """Validate uploaded image or PDF format, size, and visual quality."""
     if not file.filename:
         return False, "No filename provided", {}
 
@@ -42,6 +42,24 @@ def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, di
 
     if len(content) > MAX_FILE_SIZE:
         return False, f"File exceeds maximum size of 25MB (got {len(content) / (1024*1024):.1f}MB)", {}
+
+    if len(content) < 10:
+        return False, "File is empty or too small.", {}
+
+    # Handle PDF files — validate signature but skip OpenCV quality checks
+    if ext == ".pdf":
+        if not content[:4] == b"%PDF":
+            return False, "File content does not match PDF format (corrupted or invalid).", {}
+        metadata = {
+            "width": 0,
+            "height": 0,
+            "blur_score": 0.0,
+            "quality": "ACCEPTABLE",
+            "is_blurry": False,
+            "is_pdf": True,
+            "file_size": len(content),
+        }
+        return True, "PDF validation passed", metadata
 
     # Read image with OpenCV
     nparr = np.frombuffer(content, np.uint8)
@@ -66,12 +84,14 @@ def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, di
         "blur_score": float(round(blur_score, 2)),
         "quality": quality,
         "is_blurry": is_blurry,
+        "is_pdf": False,
     }
 
     if is_blurry:
         return False, f"Image is excessively blurry (blur score: {blur_score:.1f}). Please provide a sharper scan.", metadata
 
     return True, "Image validation passed", metadata
+
 
 
 def save_and_register_script(

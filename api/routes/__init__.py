@@ -16,6 +16,8 @@ from api.routes.scanner import router as scanner_router
 from api.routes.results import router as results_router
 from api.routes.notifications import router as notifications_router
 from api.routes.analytics import router as analytics_router
+from api.routes.teacher_documents import router as teacher_documents_router
+from api.routes.audit_logs import router as audit_logs_router
 
 all_routers = [
     auth_router,
@@ -35,6 +37,8 @@ all_routers = [
     results_router,
     notifications_router,
     analytics_router,
+    teacher_documents_router,
+    audit_logs_router,
 ]
 
 __all__ = ["all_routers"]
