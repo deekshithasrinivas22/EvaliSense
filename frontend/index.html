@@ -546,6 +546,105 @@
             </div>
         </section>
 
+        <!-- ═══════ Teacher Documents (Question Papers & Answer Keys) ═══════ -->
+        <section class="page" id="page-teacher-documents">
+            <header class="page-header">
+                <h1>Question Papers & Answer Keys</h1>
+                <p class="page-subtitle">Upload and manage question papers and official answer keys for your assigned examinations</p>
+            </header>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('tab-question-papers')">📄 Question Papers</button>
+                <button class="tab-btn" onclick="switchTab('tab-answer-keys')">📝 Answer Keys</button>
+            </div>
+
+            <!-- Question Papers Tab -->
+            <div class="tab-content active" id="tab-question-papers">
+                <div class="card">
+                    <h2>Upload Question Paper</h2>
+                    <form id="form-upload-qp" style="margin-top: 1rem;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="qp-exam-select">Select Examination *</label>
+                            <select id="qp-exam-select" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+                        </div>
+                        <div class="upload-area" id="qp-upload-area" style="margin-bottom: 1rem;">
+                            <div class="upload-icon">📄</div>
+                            <p>Drag & drop question paper here</p>
+                            <p class="upload-hint">PDF, PNG, JPG, JPEG (Max 50MB)</p>
+                            <input type="file" id="qp-file-input" accept=".pdf,.png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                        </div>
+                        <div id="qp-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                            Selected: <strong id="qp-selected-filename"></strong>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Question Paper</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>Uploaded Question Papers</h2>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-question-papers">
+                            <thead>
+                                <tr>
+                                    <th>Exam</th>
+                                    <th>Filename</th>
+                                    <th>Version</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded At</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="7">Loading question papers...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answer Keys Tab -->
+            <div class="tab-content" id="tab-answer-keys">
+                <div class="card">
+                    <h2>Upload Answer Key</h2>
+                    <form id="form-upload-ak" style="margin-top: 1rem;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="ak-exam-select">Select Examination *</label>
+                            <select id="ak-exam-select" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+                        </div>
+                        <div class="upload-area" id="ak-upload-area" style="margin-bottom: 1rem;">
+                            <div class="upload-icon">📝</div>
+                            <p>Drag & drop official answer key here</p>
+                            <p class="upload-hint">PDF, PNG, JPG, JPEG (Max 50MB)</p>
+                            <input type="file" id="ak-file-input" accept=".pdf,.png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                        </div>
+                        <div id="ak-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                            Selected: <strong id="ak-selected-filename"></strong>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Answer Key</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>Uploaded Answer Keys</h2>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-answer-keys">
+                            <thead>
+                                <tr>
+                                    <th>Exam</th>
+                                    <th>Filename</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="7">Loading answer keys...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ═══════ Scanner Dashboard ═══════ -->
         <section class="page" id="page-scanner-dashboard">
             <header class="page-header">
@@ -576,8 +675,8 @@
                     <div class="upload-area" id="scanner-upload-area" style="margin-bottom: 1rem;">
                         <div class="upload-icon">📤</div>
                         <p>Drag & drop handwritten answer script here</p>
-                        <p class="upload-hint">PNG, JPG, JPEG (Max 25MB)</p>
-                        <input type="file" id="scanner-file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                        <p class="upload-hint">PNG, JPG, JPEG, PDF (Max 25MB)</p>
+                        <input type="file" id="scanner-file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf" hidden>
                     </div>
 
                     <div id="scanner-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
@@ -609,6 +708,61 @@
                 </div>
             </div>
         </section>
+
+        <!-- ═══════ HOD Audit Logs ═══════ -->
+        <section class="page" id="page-audit-logs">
+            <header class="page-header">
+                <h1>System Audit Trail</h1>
+                <p class="page-subtitle">Immutable record of all security-critical and examination management actions</p>
+            </header>
+
+            <div class="card">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                    <div class="form-group" style="flex: 1; min-width: 150px;">
+                        <label for="audit-entity-filter">Entity Type</label>
+                        <select id="audit-entity-filter" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                            <option value="">All</option>
+                            <option value="user">User</option>
+                            <option value="exam">Exam</option>
+                            <option value="answer_script">Answer Script</option>
+                            <option value="question_paper">Question Paper</option>
+                            <option value="answer_key">Answer Key</option>
+                            <option value="teacher_assignment">Teacher Assignment</option>
+                            <option value="final_mark">Final Mark</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 150px;">
+                        <label for="audit-action-filter">Action</label>
+                        <select id="audit-action-filter" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                            <option value="">All</option>
+                            <option value="LOGIN">Login</option>
+                            <option value="UPLOAD_QUESTION_PAPER">Upload Question Paper</option>
+                            <option value="UPLOAD_ANSWER_KEY">Upload Answer Key</option>
+                            <option value="APPROVE_ANSWER_KEY">Approve Answer Key</option>
+                            <option value="UPLOAD_SCRIPT">Upload Script</option>
+                            <option value="SUBMIT_REVIEW">Submit Review</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadAuditLogs()">🔍 Filter</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="table-audit-logs">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Entity</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="5">Loading audit logs...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
 
         <!-- ═══════ Results Page ═══════ -->
         <section class="page" id="page-results">

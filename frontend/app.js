@@ -200,11 +200,13 @@ function updateSidebarNavigation() {
         items.push({ page: 'hod-exams', icon: '📋', label: 'Examinations' });
         items.push({ page: 'scripts-monitoring', icon: '📑', label: 'Answer Scripts' });
         items.push({ page: 'results', icon: '📈', label: 'Exam Results' });
+        items.push({ page: 'audit-logs', icon: '📜', label: 'Audit Trail' });
         items.push({ page: 'notifications', icon: '🔔', label: 'Notifications' });
         items.push({ page: 'evaluate', icon: '🧪', label: 'Interactive Demo' });
         items.push({ page: 'model', icon: '🤖', label: 'Model Info' });
     } else if (role === 'TEACHER') {
         items.push({ page: 'teacher-dashboard', icon: '📊', label: 'Teacher Portal' });
+        items.push({ page: 'teacher-documents', icon: '📄', label: 'Documents' });
         items.push({ page: 'teacher-reviews', icon: '⚠️', label: 'Risk Reviews' });
         items.push({ page: 'results', icon: '📈', label: 'Class Results' });
         items.push({ page: 'notifications', icon: '🔔', label: 'Notifications' });
@@ -248,9 +250,11 @@ function showPage(pageId) {
     else if (pageId === 'hod-exams') loadHodExams();
     else if (pageId === 'scripts-monitoring') loadScriptsMonitoring();
     else if (pageId === 'teacher-dashboard') loadTeacherDashboard();
+    else if (pageId === 'teacher-documents') loadTeacherDocuments();
     else if (pageId === 'teacher-reviews') loadTeacherReviews();
     else if (pageId === 'scanner-dashboard') loadScannerDashboard();
     else if (pageId === 'results') loadResultsPage();
+    else if (pageId === 'audit-logs') loadAuditLogs();
     else if (pageId === 'notifications') loadNotificationsPage();
     else if (pageId === 'model') refreshModelInfo();
 }
@@ -1410,4 +1414,216 @@ document.addEventListener('DOMContentLoaded', () => {
             hideLoading();
         }
     });
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Teacher Documents — Question Paper & Answer Key Upload
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Question Paper upload area
+    const qpArea = document.getElementById('qp-upload-area');
+    const qpInput = document.getElementById('qp-file-input');
+    if (qpArea && qpInput) {
+        qpArea.addEventListener('click', () => qpInput.click());
+        qpArea.addEventListener('dragover', (e) => { e.preventDefault(); qpArea.style.borderColor = 'var(--color-primary-500)'; });
+        qpArea.addEventListener('dragleave', () => { qpArea.style.borderColor = ''; });
+        qpArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            qpArea.style.borderColor = '';
+            qpInput.files = e.dataTransfer.files;
+            qpInput.dispatchEvent(new Event('change'));
+        });
+        qpInput.addEventListener('change', () => {
+            const file = qpInput.files[0];
+            if (file) {
+                document.getElementById('qp-selected-filename').textContent = file.name;
+                document.getElementById('qp-file-preview').style.display = 'block';
+            }
+        });
+    }
+
+    // Answer Key upload area
+    const akArea = document.getElementById('ak-upload-area');
+    const akInput = document.getElementById('ak-file-input');
+    if (akArea && akInput) {
+        akArea.addEventListener('click', () => akInput.click());
+        akArea.addEventListener('dragover', (e) => { e.preventDefault(); akArea.style.borderColor = 'var(--color-primary-500)'; });
+        akArea.addEventListener('dragleave', () => { akArea.style.borderColor = ''; });
+        akArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            akArea.style.borderColor = '';
+            akInput.files = e.dataTransfer.files;
+            akInput.dispatchEvent(new Event('change'));
+        });
+        akInput.addEventListener('change', () => {
+            const file = akInput.files[0];
+            if (file) {
+                document.getElementById('ak-selected-filename').textContent = file.name;
+                document.getElementById('ak-file-preview').style.display = 'block';
+            }
+        });
+    }
+
+    // Question Paper Form Submit
+    document.getElementById('form-upload-qp')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const examId = document.getElementById('qp-exam-select').value;
+        const file = qpInput?.files[0];
+        if (!examId || !file) { alert('Please select an exam and a file.'); return; }
+        showLoading('Uploading question paper...');
+        const fd = new FormData();
+        fd.append('exam_id', examId);
+        fd.append('file', file);
+        try {
+            const res = await apiPost('/api/teacher/documents/question-papers', fd, false);
+            alert(`✓ Question paper uploaded (v${res.question_paper.version}).`);
+            loadTeacherDocuments();
+            e.target.reset();
+            document.getElementById('qp-file-preview').style.display = 'none';
+        } catch (err) { alert(`Upload error: ${err.message}`); }
+        finally { hideLoading(); }
+    });
+
+    // Answer Key Form Submit
+    document.getElementById('form-upload-ak')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const examId = document.getElementById('ak-exam-select').value;
+        const file = akInput?.files[0];
+        if (!examId || !file) { alert('Please select an exam and a file.'); return; }
+        showLoading('Uploading answer key...');
+        const fd = new FormData();
+        fd.append('exam_id', examId);
+        fd.append('file', file);
+        try {
+            const res = await apiPost('/api/teacher/documents/answer-keys', fd, false);
+            alert(`✓ Answer key uploaded (v${res.answer_key.version}).`);
+            loadTeacherDocuments();
+            e.target.reset();
+            document.getElementById('ak-file-preview').style.display = 'none';
+        } catch (err) { alert(`Upload error: ${err.message}`); }
+        finally { hideLoading(); }
+    });
 });
+
+// ──────────────────────────────────────────────────────────────────────
+// Teacher Documents Page Functions
+// ──────────────────────────────────────────────────────────────────────
+
+async function loadTeacherDocuments() {
+    try {
+        // Populate exam selectors
+        const exams = await apiGet('/api/exams');
+        ['qp-exam-select', 'ak-exam-select'].forEach(selectId => {
+            const sel = document.getElementById(selectId);
+            if (sel) {
+                sel.innerHTML = '<option value="">— Select Exam —</option>' +
+                    exams.map(e => `<option value="${e.id}">${escapeHtml(e.name)} (${escapeHtml(e.subject_code || '')})</option>`).join('');
+            }
+        });
+
+        // Load question papers list
+        const qps = await apiGet('/api/teacher/documents/question-papers');
+        const qpBody = document.querySelector('#table-question-papers tbody');
+        if (qps.length === 0) {
+            qpBody.innerHTML = '<tr><td colspan="7" class="empty-state">No question papers uploaded yet.</td></tr>';
+        } else {
+            qpBody.innerHTML = qps.map(qp => `
+                <tr>
+                    <td>${escapeHtml(qp.exam_name || '')}</td>
+                    <td>${escapeHtml(qp.original_filename)}</td>
+                    <td>v${qp.version}</td>
+                    <td>${escapeHtml(qp.uploader_name || '')}</td>
+                    <td>${qp.uploaded_at ? new Date(qp.uploaded_at).toLocaleString() : '—'}</td>
+                    <td>${qp.is_active ? '<span class="status-pill status-completed">Active</span>' : '<span class="status-pill">Superseded</span>'}</td>
+                    <td><a href="/api/teacher/documents/question-papers/${qp.id}/preview" target="_blank" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;">Preview</a></td>
+                </tr>
+            `).join('');
+        }
+
+        // Load answer keys list
+        const aks = await apiGet('/api/teacher/documents/answer-keys');
+        const akBody = document.querySelector('#table-answer-keys tbody');
+        if (aks.length === 0) {
+            akBody.innerHTML = '<tr><td colspan="7" class="empty-state">No answer keys uploaded yet.</td></tr>';
+        } else {
+            akBody.innerHTML = aks.map(ak => {
+                const statusCls = ak.status === 'APPROVED' ? 'status-completed' : (ak.status === 'SUPERSEDED' ? 'status-failed' : 'status-uploaded');
+                const approveBtn = (ak.is_active && !ak.is_approved)
+                    ? `<button class="btn btn-primary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="approveAnswerKey(${ak.id})">✓ Approve</button>`
+                    : '';
+                return `
+                    <tr>
+                        <td>${escapeHtml(ak.exam_name || '')}</td>
+                        <td>${escapeHtml(ak.original_filename)}</td>
+                        <td>v${ak.version}</td>
+                        <td><span class="status-pill ${statusCls}">${ak.status}</span></td>
+                        <td>${escapeHtml(ak.uploader_name || '')}</td>
+                        <td>${ak.uploaded_at ? new Date(ak.uploaded_at).toLocaleString() : '—'}</td>
+                        <td>
+                            <a href="/api/teacher/documents/answer-keys/${ak.id}/preview" target="_blank" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;">Preview</a>
+                            ${approveBtn}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load teacher documents:', err);
+    }
+}
+
+async function approveAnswerKey(keyId) {
+    if (!confirm('Approve this answer key? This will set it as the official version for evaluation.')) return;
+    showLoading('Approving answer key...');
+    try {
+        const res = await apiPost(`/api/teacher/documents/answer-keys/${keyId}/approve`);
+        alert('✓ Answer key approved successfully.');
+        loadTeacherDocuments();
+    } catch (err) {
+        alert(`Error: ${err.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// HOD Audit Logs
+// ──────────────────────────────────────────────────────────────────────
+
+async function loadAuditLogs() {
+    try {
+        const entityType = document.getElementById('audit-entity-filter')?.value || '';
+        const action = document.getElementById('audit-action-filter')?.value || '';
+        let url = '/api/audit-logs?limit=200';
+        if (entityType) url += `&entity_type=${entityType}`;
+        if (action) url += `&action=${action}`;
+
+        const logs = await apiGet(url);
+        const tbody = document.querySelector('#table-audit-logs tbody');
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No audit log entries found.</td></tr>';
+        } else {
+            tbody.innerHTML = logs.map(log => {
+                let details = '—';
+                if (log.details) {
+                    try {
+                        const d = JSON.parse(log.details);
+                        details = Object.entries(d).map(([k, v]) => `<strong>${k}:</strong> ${escapeHtml(String(v))}`).join(', ');
+                    } catch { details = escapeHtml(log.details); }
+                }
+                return `
+                    <tr>
+                        <td style="white-space: nowrap; font-size: 0.82rem;">${log.created_at ? new Date(log.created_at).toLocaleString() : '—'}</td>
+                        <td>${escapeHtml(log.user_name || 'System')}</td>
+                        <td><code style="font-size: 0.8rem;">${escapeHtml(log.action)}</code></td>
+                        <td>${escapeHtml(log.entity_type)}${log.entity_id ? ' #' + log.entity_id : ''}</td>
+                        <td style="font-size: 0.82rem;">${details}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load audit logs:', err);
+        const tbody = document.querySelector('#table-audit-logs tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Unable to load audit logs.</td></tr>';
+    }
+}

@@ -9,6 +9,7 @@ from api.auth.security import create_access_token, verify_password
 from api.database.models import User
 from api.database.session import get_db
 from api.schemas.auth import LoginRequest, TokenResponse, UserProfileResponse
+from api.services.audit_service import create_audit_log
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -42,6 +43,12 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         "role": user.role.name if user.role else "USER",
         "role_id": user.role_id,
     })
+
+    create_audit_log(
+        db=db, user_id=user.id, action="LOGIN",
+        entity_type="user", entity_id=user.id,
+        details={"username": user.username, "role": user.role.name if user.role else "USER"},
+    )
 
     return TokenResponse(
         access_token=token,
