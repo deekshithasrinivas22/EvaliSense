@@ -5,6 +5,7 @@
 numpy
 opencv-python
 Pillow
+pymupdf
 
 # ─── HTR (Handwritten Text Recognition) ───
 torch

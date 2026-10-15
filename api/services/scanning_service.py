@@ -23,26 +23,48 @@ from sqlalchemy.orm import Session
 
 from api.database.models import AnswerScript, Exam, ScanIssue, Student, User
 from api.services.notification_service import create_notification
+from api.services.pdf_service import render_pdf_pages, validate_pdf_document
 from config import config
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
-MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
+ALLOWED_PDF_EXTENSIONS = {".pdf"}
+ALLOWED_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | ALLOWED_PDF_EXTENSIONS
+MAX_FILE_SIZE = config.max_upload_size_bytes
 
 
 def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, dict[str, Any]]:
-    """Validate uploaded image format, size, and visual quality."""
+    """Validate uploaded file (image or PDF) format, size, and visual quality."""
     if not file.filename:
         return False, "No filename provided", {}
 
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
-        return False, f"Unsupported file extension '{ext}'. Allowed: {', '.join(ALLOWED_EXTENSIONS)}", {}
+        return False, f"Unsupported file extension '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}", {}
 
-    if len(content) > MAX_FILE_SIZE:
-        return False, f"File exceeds maximum size of 25MB (got {len(content) / (1024*1024):.1f}MB)", {}
+    max_size = config.max_upload_size_bytes
+    if len(content) > max_size:
+        return False, f"File exceeds maximum upload size of {max_size / (1024 * 1024):.0f}MB (got {len(content) / (1024 * 1024):.1f}MB)", {}
+
+    if len(content) == 0:
+        return False, "Uploaded file is empty (0 bytes).", {}
+
+    # Delegate PDF files to PDF validation service
+    if ext in ALLOWED_PDF_EXTENSIONS:
+        return validate_pdf_document(file, content)
+
+    # Magic byte validation for image formats
+    is_valid_image_header = (
+        content.startswith(b"\x89PNG\r\n\x1a\n")  # PNG
+        or content.startswith(b"\xff\xd8\xff")      # JPEG
+        or content.startswith(b"BM")                # BMP
+        or content.startswith(b"II*\x00")           # TIFF little-endian
+        or content.startswith(b"MM\x00*")           # TIFF big-endian
+    )
+    if not is_valid_image_header:
+        return False, "Corrupted image file or unrecognized image format header.", {}
 
     # Read image with OpenCV
     nparr = np.frombuffer(content, np.uint8)
@@ -87,8 +109,16 @@ def save_and_register_script(
     content = file.file.read()
     file.file.seek(0)
 
-    # Validate image quality
+    # Validate file format, size, and visual quality
     is_valid, validation_msg, quality_meta = validate_image_file(file, content)
+
+    # For hard validation errors (unsupported extension, oversized, empty, corrupted, encrypted PDF),
+    # reject immediately with HTTP 400 Bad Request
+    if not is_valid and not quality_meta.get("is_blurry", False):
+        raise HTTPException(
+            status_code=200 if False else 400,
+            detail=validation_msg,
+        )
 
     # Determine student mapping
     student = None
@@ -138,10 +168,24 @@ def save_and_register_script(
         f.write(content)
 
     script.original_path = str(stored_path)
+
+    # If document is a PDF, render pages sequentially to pages_dir at configured DPI (~300 DPI)
+    if ext == ".pdf":
+        try:
+            render_pdf_pages(stored_path, pages_dir, dpi=config.pdf_render_dpi)
+        except Exception as exc:
+            logger.error("Failed rendering pages for PDF script #%d: %s", script.id, exc)
+            if is_valid:
+                # If page rendering failed unexpectedly, mark script as failed
+                is_valid = False
+                validation_msg = f"Failed rendering PDF pages: {str(exc)}"
+                script.status = "REUPLOAD_REQUIRED"
+                script.scan_quality = "POOR"
+
     db.commit()
     db.refresh(script)
 
-    # If image failed quality check, immediately log a scan issue
+    # If image/PDF failed quality check (e.g. blurry), immediately log a scan issue
     if not is_valid:
         issue_type = "POOR_IMAGE" if quality_meta.get("is_blurry") else "CORRUPTED_FILE"
         issue = ScanIssue(
@@ -243,6 +287,12 @@ def rescan_script(
 
     with open(new_path, "wb") as f:
         f.write(content)
+
+    # If replacement scan is a PDF, render pages
+    if ext == ".pdf":
+        pages_dir = script_dir / "pages"
+        pages_dir.mkdir(parents=True, exist_ok=True)
+        render_pdf_pages(new_path, pages_dir, dpi=config.pdf_render_dpi)
 
     script.original_filename = file.filename or script.original_filename
     script.original_path = str(new_path)

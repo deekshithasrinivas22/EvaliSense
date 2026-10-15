@@ -209,12 +209,12 @@ def get_exam_answer_key_info(db: Session, exam_id: int) -> dict[str, Any]:
 
     keys = (
         db.query(AnswerKeyFile)
-        .filter(AnswerKeyFile.exam_id == exam_id)
+        .filter(AnswerKeyFile.exam_id == exam_id, AnswerKeyFile.status != "DELETED")
         .order_by(AnswerKeyFile.version.desc())
         .all()
     )
 
-    active_key = next((k.to_dict() for k in keys if k.is_active), None)
+    active_key = next((k.to_dict() for k in keys if k.is_active and k.status != "ARCHIVED"), None)
     return {
         "exam_id": exam.id,
         "exam_name": exam.name,
@@ -243,13 +243,14 @@ def activate_answer_key_version(
     check_exam_authorization(db, user, exam)
 
     target_key = db.query(AnswerKeyFile).filter(AnswerKeyFile.id == key_id, AnswerKeyFile.exam_id == exam_id).first()
-    if not target_key:
+    if not target_key or target_key.status == "DELETED":
         raise HTTPException(status_code=404, detail="Answer key file version not found.")
 
     all_keys = db.query(AnswerKeyFile).filter(AnswerKeyFile.exam_id == exam_id).all()
     for k in all_keys:
         k.is_active = (k.id == target_key.id)
 
+    target_key.status = "ACTIVE"
     db.commit()
     db.refresh(target_key)
 
@@ -264,3 +265,158 @@ def activate_answer_key_version(
     )
 
     return target_key
+
+
+def archive_answer_key_version(
+    db: Session,
+    exam_id: int,
+    key_id: int,
+    user: User,
+) -> AnswerKeyFile:
+    """Archive an answer key version without deleting records."""
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found.")
+
+    check_exam_authorization(db, user, exam)
+
+    target_key = db.query(AnswerKeyFile).filter(AnswerKeyFile.id == key_id, AnswerKeyFile.exam_id == exam_id).first()
+    if not target_key or target_key.status == "DELETED":
+        raise HTTPException(status_code=404, detail="Answer key file version not found.")
+
+    was_active = target_key.is_active
+    target_key.status = "ARCHIVED"
+    target_key.is_active = False
+
+    if was_active:
+        remaining = (
+            db.query(AnswerKeyFile)
+            .filter(
+                AnswerKeyFile.exam_id == exam_id,
+                AnswerKeyFile.id != target_key.id,
+                AnswerKeyFile.status == "ACTIVE",
+            )
+            .order_by(AnswerKeyFile.version.desc())
+            .first()
+        )
+        if remaining:
+            remaining.is_active = True
+
+    db.commit()
+    db.refresh(target_key)
+
+    create_notification(
+        db=db,
+        user_id=user.id,
+        type="ANSWER_KEY_ARCHIVED",
+        title=f"Answer Key Archived (v{target_key.version})",
+        message=f"Answer key v{target_key.version} has been archived for examination '{exam.name}'.",
+        reference_type="exam",
+        reference_id=exam.id,
+    )
+
+    return target_key
+
+
+def restore_answer_key_version(
+    db: Session,
+    exam_id: int,
+    key_id: int,
+    user: User,
+) -> AnswerKeyFile:
+    """Restore an archived answer key version and make it active."""
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found.")
+
+    check_exam_authorization(db, user, exam)
+
+    target_key = db.query(AnswerKeyFile).filter(AnswerKeyFile.id == key_id, AnswerKeyFile.exam_id == exam_id).first()
+    if not target_key or target_key.status == "DELETED":
+        raise HTTPException(status_code=404, detail="Answer key file version not found.")
+
+    all_keys = db.query(AnswerKeyFile).filter(AnswerKeyFile.exam_id == exam_id).all()
+    for k in all_keys:
+        k.is_active = (k.id == target_key.id)
+
+    target_key.status = "ACTIVE"
+    db.commit()
+    db.refresh(target_key)
+
+    create_notification(
+        db=db,
+        user_id=user.id,
+        type="ANSWER_KEY_RESTORED",
+        title=f"Answer Key Restored (v{target_key.version})",
+        message=f"Answer key v{target_key.version} has been restored and activated for examination '{exam.name}'.",
+        reference_type="exam",
+        reference_id=exam.id,
+    )
+
+    return target_key
+
+
+def delete_answer_key_version(
+    db: Session,
+    exam_id: int,
+    key_id: int,
+    user: User,
+) -> dict[str, Any]:
+    """Safely delete an answer key version if no evaluations depend on it."""
+    from api.database.models import AnswerScript
+
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found.")
+
+    check_exam_authorization(db, user, exam)
+
+    target_key = db.query(AnswerKeyFile).filter(AnswerKeyFile.id == key_id, AnswerKeyFile.exam_id == exam_id).first()
+    if not target_key or target_key.status == "DELETED":
+        raise HTTPException(status_code=404, detail="Answer key file version not found.")
+
+    # Safeguard check
+    has_evals = (
+        db.query(AnswerScript)
+        .filter(
+            AnswerScript.exam_id == exam_id,
+            AnswerScript.status.in_(["EVALUATED", "COMPLETED", "TEACHER_REVIEW", "FINALIZED"]),
+        )
+        .count()
+        > 0
+    )
+    if has_evals:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Cannot delete answer key: this examination has evaluated student answer scripts. "
+                "Answer keys must be retained for academic integrity and auditability. "
+                "You may archive this version instead."
+            ),
+        )
+
+    was_active = target_key.is_active
+    target_key.status = "DELETED"
+    target_key.is_active = False
+
+    if was_active:
+        remaining = (
+            db.query(AnswerKeyFile)
+            .filter(
+                AnswerKeyFile.exam_id == exam_id,
+                AnswerKeyFile.id != target_key.id,
+                AnswerKeyFile.status == "ACTIVE",
+            )
+            .order_by(AnswerKeyFile.version.desc())
+            .first()
+        )
+        if remaining:
+            remaining.is_active = True
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Answer key v{target_key.version} successfully removed.",
+        "deleted_id": target_key.id,
+    }

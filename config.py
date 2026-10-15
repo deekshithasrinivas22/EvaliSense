@@ -55,6 +55,15 @@ class Config:
     api_port: int = 8000
     debug: bool = False
 
+    # ---------- scanning & uploads ----------
+    max_upload_size_bytes: int = 25 * 1024 * 1024  # 25 MB
+    max_pdf_pages: int = 50
+    pdf_render_dpi: int = 200  # Target DPI (initially 200 DPI for scanned answer scripts)
+    pdf_max_render_width: int = 4000  # Max rendered width in pixels
+    pdf_max_render_height: int = 5000  # Max rendered height in pixels
+    pdf_max_render_pixels: int = 16_000_000  # Max total pixels per rendered page (16 MP)
+    max_page_dimension: int = 5000  # General dimension ceiling (legacy / fallback)
+
     # ---------- logging ----------
     log_level: str = "INFO"
     log_file: str | None = None
@@ -108,6 +117,13 @@ class Config:
             "JWT_SECRET": "jwt_secret",
             "JWT_ALGORITHM": "jwt_algorithm",
             "JWT_EXPIRE_MINUTES": "jwt_expire_minutes",
+            "MAX_UPLOAD_SIZE": "max_upload_size_bytes",
+            "MAX_PDF_PAGES": "max_pdf_pages",
+            "PDF_RENDER_DPI": "pdf_render_dpi",
+            "PDF_MAX_RENDER_WIDTH": "pdf_max_render_width",
+            "PDF_MAX_RENDER_HEIGHT": "pdf_max_render_height",
+            "PDF_MAX_RENDER_PIXELS": "pdf_max_render_pixels",
+            "MAX_PAGE_DIMENSION": "max_page_dimension",
         }
         for env_suffix, attr in mapping.items():
             value = os.environ.get(f"{prefix}{env_suffix}")

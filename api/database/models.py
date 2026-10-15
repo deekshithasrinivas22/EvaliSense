@@ -262,14 +262,23 @@ class Exam(Base):
     questions = relationship("ExamQuestion", back_populates="exam", cascade="all, delete-orphan", order_by="ExamQuestion.question_number")
     answer_scripts = relationship("AnswerScript", back_populates="exam")
     answer_key_files = relationship("AnswerKeyFile", back_populates="exam", cascade="all, delete-orphan", order_by="AnswerKeyFile.version.desc()")
+    question_paper_files = relationship("QuestionPaperFile", back_populates="exam", cascade="all, delete-orphan", order_by="QuestionPaperFile.version.desc()")
 
     def to_dict(self) -> dict[str, Any]:
         active_key = None
         if self.answer_key_files:
             for k in self.answer_key_files:
-                if k.is_active:
+                if k.is_active and getattr(k, "status", "ACTIVE") != "DELETED":
                     active_key = k.to_dict()
                     break
+
+        active_qp = None
+        if self.question_paper_files:
+            for qp in self.question_paper_files:
+                if qp.is_active and getattr(qp, "status", "ACTIVE") != "DELETED":
+                    active_qp = qp.to_dict()
+                    break
+
         return {
             "id": self.id,
             "subject_id": self.subject_id,
@@ -285,6 +294,8 @@ class Exam(Base):
             "status": self.status,
             "question_count": len(self.questions) if self.questions else 0,
             "active_answer_key": active_key,
+            "active_question_paper": active_qp,
+            "question_paper_count": len([qp for qp in self.question_paper_files if getattr(qp, "status", "ACTIVE") != "DELETED"]) if self.question_paper_files else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -300,9 +311,58 @@ class AnswerKeyFile(Base):
     file_path = Column(String(500), nullable=False)
     version = Column(Integer, default=1, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
+    status = Column(String(30), default="ACTIVE", nullable=True)  # ACTIVE, ARCHIVED, DELETED
+    extracted_data_json = Column(Text, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     exam = relationship("Exam", back_populates="answer_key_files")
+    uploader = relationship("User")
+
+    def to_dict(self) -> dict[str, Any]:
+        effective_status = self.status or ("ACTIVE" if self.is_active else "ARCHIVED")
+        extracted_obj = None
+        if self.extracted_data_json:
+            try:
+                extracted_obj = json.loads(self.extracted_data_json)
+            except Exception:
+                pass
+
+        return {
+            "id": self.id,
+            "exam_id": self.exam_id,
+            "uploaded_by": self.uploaded_by,
+            "uploader_name": self.uploader.full_name if self.uploader else None,
+            "original_filename": self.original_filename,
+            "file_name": self.original_filename,  # alias for frontend compatibility
+            "file_path": self.file_path,
+            "version": self.version,
+            "is_active": self.is_active,
+            "status": effective_status,
+            "has_extracted_data": extracted_obj is not None,
+            "extracted_data": extracted_obj,
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "created_at": self.uploaded_at.isoformat() if self.uploaded_at else None,  # alias for frontend
+        }
+
+
+class QuestionPaperFile(Base):
+    """Stores uploaded question paper files and version history for examinations."""
+    __tablename__ = "question_paper_files"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    original_filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size = Column(Integer, nullable=True)
+    page_count = Column(Integer, default=1, nullable=False)
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    status = Column(String(30), default="ACTIVE", nullable=False)  # ACTIVE, ARCHIVED, REPLACED, DELETED
+    question_count = Column(Integer, default=0, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    exam = relationship("Exam", back_populates="question_paper_files")
     uploader = relationship("User")
 
     def to_dict(self) -> dict[str, Any]:
@@ -312,10 +372,16 @@ class AnswerKeyFile(Base):
             "uploaded_by": self.uploaded_by,
             "uploader_name": self.uploader.full_name if self.uploader else None,
             "original_filename": self.original_filename,
+            "file_name": self.original_filename,  # alias
             "file_path": self.file_path,
+            "file_size": self.file_size,
+            "page_count": self.page_count,
             "version": self.version,
             "is_active": self.is_active,
+            "status": self.status,
+            "question_count": self.question_count,
             "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "created_at": self.uploaded_at.isoformat() if self.uploaded_at else None,  # alias
         }
 
 

@@ -60,6 +60,17 @@ def _migrate_schema() -> None:
                 conn.execute(text("ALTER TABLE exam_questions ADD COLUMN updated_at DATETIME"))
                 conn.commit()
 
+    if "answer_key_files" in table_names:
+        ak_cols = [c["name"] for c in inspector.get_columns("answer_key_files")]
+        if "status" not in ak_cols:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE answer_key_files ADD COLUMN status VARCHAR(30) DEFAULT 'ACTIVE'"))
+                conn.commit()
+        if "extracted_data_json" not in ak_cols:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE answer_key_files ADD COLUMN extracted_data_json TEXT"))
+                conn.commit()
+
 
 def init_db() -> None:
     """Create all tables and run initial seed."""

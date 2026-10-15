@@ -79,7 +79,7 @@ def get_script(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Retrieve full details of an answer script including extracted answers and issues."""
+    """Retrieve full details of an answer script including extracted answers, issues, and page traces."""
     script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
     if not script:
         raise HTTPException(status_code=404, detail="Script not found.")
@@ -88,10 +88,22 @@ def get_script(
     if user_role == "SCANNER" and script.uploaded_by != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied.")
 
+    orig_path = Path(script.original_path)
+    script_dir = orig_path.parent.parent if orig_path.parent.name == "original" else orig_path.parent
+    manifest_file = script_dir / "pages" / "pages_manifest.json"
+    pages_data = None
+    if manifest_file.exists():
+        import json
+        try:
+            pages_data = json.loads(manifest_file.read_text(encoding="utf-8")).get("pages")
+        except Exception:
+            pages_data = None
+
     return {
         "script": script.to_dict(),
         "issues": [issue.to_dict() for issue in script.scan_issues],
         "answers": [ans.to_dict() for ans in script.answers],
+        "pages": pages_data,
     }
 
 
@@ -158,10 +170,11 @@ def rescan(
 @router.get("/{script_id}/image")
 def get_script_image(
     script_id: int,
+    page: int | None = Query(None, description="Page number for multipage documents (1-indexed)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Securely stream script image."""
+    """Securely stream script image or specific rendered page."""
     script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
     if not script:
         raise HTTPException(status_code=404, detail="Script not found.")
@@ -172,7 +185,68 @@ def get_script_image(
     if not str(img_path).startswith(str(storage_root)) and not str(img_path).startswith(str(config.project_root.resolve())):
         raise HTTPException(status_code=403, detail="Access denied.")
 
+    is_pdf = img_path.suffix.lower() == ".pdf"
+    script_dir = img_path.parent.parent if img_path.parent.name == "original" else img_path.parent
+    pages_dir = script_dir / "pages"
+
+    # If page number is specified, stream the specific rendered page
+    if page is not None:
+        page_file = pages_dir / f"page_{page:03d}.png"
+        if page_file.exists():
+            return FileResponse(str(page_file), media_type="image/png")
+        raise HTTPException(status_code=404, detail=f"Page {page} not found for script #{script_id}.")
+
+    # If document is a PDF and no specific page is requested, stream page 1 image so standard <img> tags render
+    if is_pdf:
+        first_page = pages_dir / "page_001.png"
+        if first_page.exists():
+            return FileResponse(str(first_page), media_type="image/png")
+
     if not img_path.exists():
         raise HTTPException(status_code=404, detail="Image file not found on server.")
 
     return FileResponse(str(img_path))
+
+
+@router.get("/{script_id}/pages")
+def get_script_pages(
+    script_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retrieve all pages of a script including rendered page URLs and OCR traces."""
+    script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found.")
+
+    orig_path = Path(script.original_path)
+    script_dir = orig_path.parent.parent if orig_path.parent.name == "original" else orig_path.parent
+    pages_dir = script_dir / "pages"
+    manifest_file = pages_dir / "pages_manifest.json"
+
+    if manifest_file.exists():
+        import json
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        for p in manifest.get("pages", []):
+            p["image_url"] = f"/api/scripts/{script.id}/image?page={p['page_number']}"
+        return manifest
+
+    page_files = sorted(pages_dir.glob("page_*.png")) if pages_dir.exists() else []
+    if page_files:
+        return {
+            "script_id": script.id,
+            "total_pages": len(page_files),
+            "pages": [
+                {
+                    "page_number": idx + 1,
+                    "image_url": f"/api/scripts/{script.id}/image?page={idx + 1}",
+                }
+                for idx in range(len(page_files))
+            ],
+        }
+
+    return {
+        "script_id": script.id,
+        "total_pages": 1,
+        "pages": [{"page_number": 1, "image_url": f"/api/scripts/{script.id}/image"}],
+    }

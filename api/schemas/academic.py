@@ -194,3 +194,9 @@ class ExamQuestionResponse(BaseModel):
     reference_answer: str | None = None
     rubric_json: str | None = None
     created_at: str | None = None
+
+
+class ConfirmQuestionsRequest(BaseModel):
+    questions: list[ExamQuestionCreate]
+    replace_existing: bool = True
+
