@@ -17,6 +17,10 @@ from api.database.models import (
     FinalMark,
     ScanIssue,
     Notification,
+    QuestionPaper,
+    AnswerKey,
+    ScriptPage,
+    AuditLog,
 )
 
 __all__ = [
@@ -41,4 +45,8 @@ __all__ = [
     "FinalMark",
     "ScanIssue",
     "Notification",
+    "QuestionPaper",
+    "AnswerKey",
+    "ScriptPage",
+    "AuditLog",
 ]

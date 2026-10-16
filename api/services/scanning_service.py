@@ -9,7 +9,6 @@ Handles:
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import uuid
 from datetime import datetime
@@ -23,48 +22,44 @@ from sqlalchemy.orm import Session
 
 from api.database.models import AnswerScript, Exam, ScanIssue, Student, User
 from api.services.notification_service import create_notification
-from api.services.pdf_service import render_pdf_pages, validate_pdf_document
 from config import config
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
-ALLOWED_PDF_EXTENSIONS = {".pdf"}
-ALLOWED_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | ALLOWED_PDF_EXTENSIONS
-MAX_FILE_SIZE = config.max_upload_size_bytes
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".pdf"}
+MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
 
 
 def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, dict[str, Any]]:
-    """Validate uploaded file (image or PDF) format, size, and visual quality."""
+    """Validate uploaded image or PDF format, size, and visual quality."""
     if not file.filename:
         return False, "No filename provided", {}
 
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
-        return False, f"Unsupported file extension '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}", {}
+        return False, f"Unsupported file extension '{ext}'. Allowed: {', '.join(ALLOWED_EXTENSIONS)}", {}
 
-    max_size = config.max_upload_size_bytes
-    if len(content) > max_size:
-        return False, f"File exceeds maximum upload size of {max_size / (1024 * 1024):.0f}MB (got {len(content) / (1024 * 1024):.1f}MB)", {}
+    if len(content) > MAX_FILE_SIZE:
+        return False, f"File exceeds maximum size of 25MB (got {len(content) / (1024*1024):.1f}MB)", {}
 
-    if len(content) == 0:
-        return False, "Uploaded file is empty (0 bytes).", {}
+    if len(content) < 10:
+        return False, "File is empty or too small.", {}
 
-    # Delegate PDF files to PDF validation service
-    if ext in ALLOWED_PDF_EXTENSIONS:
-        return validate_pdf_document(file, content)
-
-    # Magic byte validation for image formats
-    is_valid_image_header = (
-        content.startswith(b"\x89PNG\r\n\x1a\n")  # PNG
-        or content.startswith(b"\xff\xd8\xff")      # JPEG
-        or content.startswith(b"BM")                # BMP
-        or content.startswith(b"II*\x00")           # TIFF little-endian
-        or content.startswith(b"MM\x00*")           # TIFF big-endian
-    )
-    if not is_valid_image_header:
-        return False, "Corrupted image file or unrecognized image format header.", {}
+    # Handle PDF files — validate signature but skip OpenCV quality checks
+    if ext == ".pdf":
+        if not content[:4] == b"%PDF":
+            return False, "File content does not match PDF format (corrupted or invalid).", {}
+        metadata = {
+            "width": 0,
+            "height": 0,
+            "blur_score": 0.0,
+            "quality": "ACCEPTABLE",
+            "is_blurry": False,
+            "is_pdf": True,
+            "file_size": len(content),
+        }
+        return True, "PDF validation passed", metadata
 
     # Read image with OpenCV
     nparr = np.frombuffer(content, np.uint8)
@@ -89,12 +84,14 @@ def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, di
         "blur_score": float(round(blur_score, 2)),
         "quality": quality,
         "is_blurry": is_blurry,
+        "is_pdf": False,
     }
 
     if is_blurry:
         return False, f"Image is excessively blurry (blur score: {blur_score:.1f}). Please provide a sharper scan.", metadata
 
     return True, "Image validation passed", metadata
+
 
 
 def save_and_register_script(
@@ -109,16 +106,8 @@ def save_and_register_script(
     content = file.file.read()
     file.file.seek(0)
 
-    # Validate file format, size, and visual quality
+    # Validate image quality
     is_valid, validation_msg, quality_meta = validate_image_file(file, content)
-
-    # For hard validation errors (unsupported extension, oversized, empty, corrupted, encrypted PDF),
-    # reject immediately with HTTP 400 Bad Request
-    if not is_valid and not quality_meta.get("is_blurry", False):
-        raise HTTPException(
-            status_code=200 if False else 400,
-            detail=validation_msg,
-        )
 
     # Determine student mapping
     student = None
@@ -130,6 +119,16 @@ def save_and_register_script(
         if not student:
             student_confidence = 0.3
 
+    # Generate safe unique path
+    ext = Path(file.filename).suffix.lower() if file.filename else ".png"
+    safe_uid = str(uuid.uuid4())[:12]
+    exam_storage = config.storage_dir / f"exam_{exam.id}"
+    exam_storage.mkdir(parents=True, exist_ok=True)
+    stored_path = exam_storage / f"script_{safe_uid}{ext}"
+
+    with open(stored_path, "wb") as f:
+        f.write(content)
+
     initial_status = "UPLOADED" if is_valid else "REUPLOAD_REQUIRED"
     scan_quality = quality_meta.get("quality", "POOR" if not is_valid else "ACCEPTABLE")
 
@@ -138,54 +137,17 @@ def save_and_register_script(
         student_id=student.id if student else None,
         uploaded_by=uploader.id,
         original_filename=file.filename or "unknown.png",
-        original_path="",  # set after directory creation below
+        original_path=str(stored_path),
         status=initial_status,
         scan_quality=scan_quality,
         student_identifier_confidence=student_confidence,
         uploaded_at=datetime.utcnow(),
     )
     db.add(script)
-    db.flush()
-
-    # Generate safe unique path following controlled storage hierarchy:
-    # storage/answer_scripts/{academic_year}/{exam_id}/{script_id}/
-    ext = Path(file.filename).suffix.lower() if file.filename else ".png"
-    safe_uid = str(uuid.uuid4())[:12]
-    year_str = re.sub(r"[^\w\-]", "_", exam.academic_year or "default")
-    script_dir = config.storage_dir / "answer_scripts" / year_str / f"exam_{exam.id}" / f"script_{script.id}"
-    orig_dir = script_dir / "original"
-    pages_dir = script_dir / "pages"
-    proc_dir = script_dir / "processed"
-    debug_dir = script_dir / "debug"
-
-    orig_dir.mkdir(parents=True, exist_ok=True)
-    pages_dir.mkdir(parents=True, exist_ok=True)
-    proc_dir.mkdir(parents=True, exist_ok=True)
-    debug_dir.mkdir(parents=True, exist_ok=True)
-
-    stored_path = orig_dir / f"original_{safe_uid}{ext}"
-    with open(stored_path, "wb") as f:
-        f.write(content)
-
-    script.original_path = str(stored_path)
-
-    # If document is a PDF, render pages sequentially to pages_dir at configured DPI (~300 DPI)
-    if ext == ".pdf":
-        try:
-            render_pdf_pages(stored_path, pages_dir, dpi=config.pdf_render_dpi)
-        except Exception as exc:
-            logger.error("Failed rendering pages for PDF script #%d: %s", script.id, exc)
-            if is_valid:
-                # If page rendering failed unexpectedly, mark script as failed
-                is_valid = False
-                validation_msg = f"Failed rendering PDF pages: {str(exc)}"
-                script.status = "REUPLOAD_REQUIRED"
-                script.scan_quality = "POOR"
-
     db.commit()
     db.refresh(script)
 
-    # If image/PDF failed quality check (e.g. blurry), immediately log a scan issue
+    # If image failed quality check, immediately log a scan issue
     if not is_valid:
         issue_type = "POOR_IMAGE" if quality_meta.get("is_blurry") else "CORRUPTED_FILE"
         issue = ScanIssue(
@@ -275,24 +237,15 @@ def rescan_script(
     if not is_valid:
         raise HTTPException(status_code=400, detail=f"New scan validation failed: {validation_msg}")
 
-    # Save new scan into original subfolder, preserving previous scans
+    # Overwrite the stored file or save with new name
     ext = Path(file.filename).suffix.lower() if file.filename else ".png"
     safe_uid = str(uuid.uuid4())[:12]
-    exam = script.exam
-    year_str = re.sub(r"[^\w\-]", "_", exam.academic_year or "default") if exam else "default"
-    script_dir = config.storage_dir / "answer_scripts" / year_str / f"exam_{script.exam_id}" / f"script_{script.id}"
-    orig_dir = script_dir / "original"
-    orig_dir.mkdir(parents=True, exist_ok=True)
-    new_path = orig_dir / f"rescan_{safe_uid}{ext}"
+    exam_storage = config.storage_dir / f"exam_{script.exam_id}"
+    exam_storage.mkdir(parents=True, exist_ok=True)
+    new_path = exam_storage / f"script_{safe_uid}{ext}"
 
     with open(new_path, "wb") as f:
         f.write(content)
-
-    # If replacement scan is a PDF, render pages
-    if ext == ".pdf":
-        pages_dir = script_dir / "pages"
-        pages_dir.mkdir(parents=True, exist_ok=True)
-        render_pdf_pages(new_path, pages_dir, dpi=config.pdf_render_dpi)
 
     script.original_filename = file.filename or script.original_filename
     script.original_path = str(new_path)

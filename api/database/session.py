@@ -48,35 +48,9 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def _migrate_schema() -> None:
-    """Ensure any newly added columns exist in SQLite database tables."""
-    from sqlalchemy import inspect, text
-    inspector = inspect(engine)
-    table_names = inspector.get_table_names()
-    if "exam_questions" in table_names:
-        cols = [c["name"] for c in inspector.get_columns("exam_questions")]
-        if "updated_at" not in cols:
-            with engine.connect() as conn:
-                conn.execute(text("ALTER TABLE exam_questions ADD COLUMN updated_at DATETIME"))
-                conn.commit()
-
-    if "answer_key_files" in table_names:
-        ak_cols = [c["name"] for c in inspector.get_columns("answer_key_files")]
-        if "status" not in ak_cols:
-            with engine.connect() as conn:
-                conn.execute(text("ALTER TABLE answer_key_files ADD COLUMN status VARCHAR(30) DEFAULT 'ACTIVE'"))
-                conn.commit()
-        if "extracted_data_json" not in ak_cols:
-            with engine.connect() as conn:
-                conn.execute(text("ALTER TABLE answer_key_files ADD COLUMN extracted_data_json TEXT"))
-                conn.commit()
-
-
 def init_db() -> None:
     """Create all tables and run initial seed."""
     from api.database import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
-    _migrate_schema()
     from api.database.seed import seed_initial_data
     seed_initial_data()
-

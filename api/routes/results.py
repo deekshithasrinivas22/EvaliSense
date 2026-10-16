@@ -42,20 +42,6 @@ def get_exam_results(
     return res
 
 
-@router.get("/api/subjects/{subject_id}/results")
-def get_subject_results(
-    subject_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Get subject-wide examination results across students."""
-    from api.services.result_service import get_subject_summary_results
-    res = get_subject_summary_results(db, subject_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="Subject or results not found.")
-    return res
-
-
 @router.get("/api/exams/{exam_id}/students/{student_id}/results")
 def get_student_single_exam_result(
     exam_id: int,

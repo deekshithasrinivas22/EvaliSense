@@ -91,6 +91,5 @@ def require_roles(allowed_roles: list[str]) -> Callable:
 
 # Role-specific dependency shortcuts
 require_hod = require_roles(["HOD"])
-require_teacher = require_roles(["TEACHER"])
-require_teacher_or_hod = require_roles(["TEACHER", "HOD"])
-require_scanner = require_roles(["SCANNER"])
+require_teacher = require_roles(["TEACHER", "HOD"])
+require_scanner = require_roles(["SCANNER", "HOD"])

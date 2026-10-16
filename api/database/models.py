@@ -261,24 +261,8 @@ class Exam(Base):
     section = relationship("Section", back_populates="exams")
     questions = relationship("ExamQuestion", back_populates="exam", cascade="all, delete-orphan", order_by="ExamQuestion.question_number")
     answer_scripts = relationship("AnswerScript", back_populates="exam")
-    answer_key_files = relationship("AnswerKeyFile", back_populates="exam", cascade="all, delete-orphan", order_by="AnswerKeyFile.version.desc()")
-    question_paper_files = relationship("QuestionPaperFile", back_populates="exam", cascade="all, delete-orphan", order_by="QuestionPaperFile.version.desc()")
 
     def to_dict(self) -> dict[str, Any]:
-        active_key = None
-        if self.answer_key_files:
-            for k in self.answer_key_files:
-                if k.is_active and getattr(k, "status", "ACTIVE") != "DELETED":
-                    active_key = k.to_dict()
-                    break
-
-        active_qp = None
-        if self.question_paper_files:
-            for qp in self.question_paper_files:
-                if qp.is_active and getattr(qp, "status", "ACTIVE") != "DELETED":
-                    active_qp = qp.to_dict()
-                    break
-
         return {
             "id": self.id,
             "subject_id": self.subject_id,
@@ -293,95 +277,7 @@ class Exam(Base):
             "total_marks": self.total_marks,
             "status": self.status,
             "question_count": len(self.questions) if self.questions else 0,
-            "active_answer_key": active_key,
-            "active_question_paper": active_qp,
-            "question_paper_count": len([qp for qp in self.question_paper_files if getattr(qp, "status", "ACTIVE") != "DELETED"]) if self.question_paper_files else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-class AnswerKeyFile(Base):
-    """Stores official answer key files uploaded for examinations."""
-    __tablename__ = "answer_key_files"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
-    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
-    original_filename = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)
-    version = Column(Integer, default=1, nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
-    status = Column(String(30), default="ACTIVE", nullable=True)  # ACTIVE, ARCHIVED, DELETED
-    extracted_data_json = Column(Text, nullable=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-    exam = relationship("Exam", back_populates="answer_key_files")
-    uploader = relationship("User")
-
-    def to_dict(self) -> dict[str, Any]:
-        effective_status = self.status or ("ACTIVE" if self.is_active else "ARCHIVED")
-        extracted_obj = None
-        if self.extracted_data_json:
-            try:
-                extracted_obj = json.loads(self.extracted_data_json)
-            except Exception:
-                pass
-
-        return {
-            "id": self.id,
-            "exam_id": self.exam_id,
-            "uploaded_by": self.uploaded_by,
-            "uploader_name": self.uploader.full_name if self.uploader else None,
-            "original_filename": self.original_filename,
-            "file_name": self.original_filename,  # alias for frontend compatibility
-            "file_path": self.file_path,
-            "version": self.version,
-            "is_active": self.is_active,
-            "status": effective_status,
-            "has_extracted_data": extracted_obj is not None,
-            "extracted_data": extracted_obj,
-            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
-            "created_at": self.uploaded_at.isoformat() if self.uploaded_at else None,  # alias for frontend
-        }
-
-
-class QuestionPaperFile(Base):
-    """Stores uploaded question paper files and version history for examinations."""
-    __tablename__ = "question_paper_files"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
-    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
-    original_filename = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)
-    file_size = Column(Integer, nullable=True)
-    page_count = Column(Integer, default=1, nullable=False)
-    version = Column(Integer, default=1, nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False, index=True)
-    status = Column(String(30), default="ACTIVE", nullable=False)  # ACTIVE, ARCHIVED, REPLACED, DELETED
-    question_count = Column(Integer, default=0, nullable=False)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-    exam = relationship("Exam", back_populates="question_paper_files")
-    uploader = relationship("User")
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "exam_id": self.exam_id,
-            "uploaded_by": self.uploaded_by,
-            "uploader_name": self.uploader.full_name if self.uploader else None,
-            "original_filename": self.original_filename,
-            "file_name": self.original_filename,  # alias
-            "file_path": self.file_path,
-            "file_size": self.file_size,
-            "page_count": self.page_count,
-            "version": self.version,
-            "is_active": self.is_active,
-            "status": self.status,
-            "question_count": self.question_count,
-            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
-            "created_at": self.uploaded_at.isoformat() if self.uploaded_at else None,  # alias
         }
 
 
@@ -397,7 +293,6 @@ class ExamQuestion(Base):
     reference_answer = Column(Text, nullable=True)
     rubric_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)
 
     exam = relationship("Exam", back_populates="questions")
     answers = relationship("AnswerAnswer", back_populates="question")
@@ -416,7 +311,6 @@ class ExamQuestion(Base):
             "reference_answer": self.reference_answer,
             "rubric_json": self.rubric_json,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
@@ -648,5 +542,156 @@ class Notification(Base):
             "reference_type": self.reference_type,
             "reference_id": self.reference_id,
             "is_read": self.is_read,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class QuestionPaper(Base):
+    """Stores uploaded question paper files (PDF/image) for an exam."""
+    __tablename__ = "question_papers"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    original_filename = Column(String(255), nullable=False)
+    storage_path = Column(String(500), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=False)  # bytes
+    checksum = Column(String(128), nullable=True)
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    extracted_text = Column(Text, nullable=True)
+    page_count = Column(Integer, default=1, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    exam = relationship("Exam", backref="question_papers")
+    uploader = relationship("User")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "exam_id": self.exam_id,
+            "exam_name": self.exam.name if self.exam else None,
+            "uploaded_by": self.uploaded_by,
+            "uploader_name": self.uploader.full_name if self.uploader else None,
+            "original_filename": self.original_filename,
+            "storage_path": self.storage_path,
+            "mime_type": self.mime_type,
+            "file_size": self.file_size,
+            "checksum": self.checksum,
+            "version": self.version,
+            "is_active": self.is_active,
+            "extracted_text": self.extracted_text,
+            "page_count": self.page_count,
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+        }
+
+
+class AnswerKey(Base):
+    """Stores uploaded official answer keys/model answers with versioning."""
+    __tablename__ = "answer_keys"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    original_filename = Column(String(255), nullable=False)
+    storage_path = Column(String(500), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    checksum = Column(String(128), nullable=True)
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_approved = Column(Boolean, default=False, nullable=False)
+    extracted_text = Column(Text, nullable=True)
+    page_count = Column(Integer, default=1, nullable=False)
+    status = Column(String(30), default="UPLOADED", nullable=False, index=True)  # UPLOADED, APPROVED, SUPERSEDED
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    approved_at = Column(DateTime, nullable=True)
+
+    exam = relationship("Exam", backref="answer_keys")
+    uploader = relationship("User")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "exam_id": self.exam_id,
+            "exam_name": self.exam.name if self.exam else None,
+            "uploaded_by": self.uploaded_by,
+            "uploader_name": self.uploader.full_name if self.uploader else None,
+            "original_filename": self.original_filename,
+            "storage_path": self.storage_path,
+            "mime_type": self.mime_type,
+            "file_size": self.file_size,
+            "checksum": self.checksum,
+            "version": self.version,
+            "is_active": self.is_active,
+            "is_approved": self.is_approved,
+            "extracted_text": self.extracted_text,
+            "page_count": self.page_count,
+            "status": self.status,
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "approved_at": self.approved_at.isoformat() if self.approved_at else None,
+        }
+
+
+class ScriptPage(Base):
+    """Stores individual pages of multi-page answer scripts."""
+    __tablename__ = "script_pages"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    script_id = Column(Integer, ForeignKey("answer_scripts.id", ondelete="CASCADE"), nullable=False, index=True)
+    page_number = Column(Integer, nullable=False)
+    image_path = Column(String(500), nullable=False)
+    original_filename = Column(String(255), nullable=True)
+    ocr_text = Column(Text, nullable=True)
+    ocr_confidence = Column(Float, nullable=True)
+    status = Column(String(30), default="UPLOADED", nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    script = relationship("AnswerScript", backref="pages")
+
+    __table_args__ = (
+        UniqueConstraint("script_id", "page_number", name="uq_script_page_number"),
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "script_id": self.script_id,
+            "page_number": self.page_number,
+            "image_path": self.image_path,
+            "original_filename": self.original_filename,
+            "ocr_text": self.ocr_text,
+            "ocr_confidence": self.ocr_confidence,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class AuditLog(Base):
+    """Immutable audit trail for security-critical and examination actions."""
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    action = Column(String(100), nullable=False, index=True)
+    entity_type = Column(String(50), nullable=False, index=True)
+    entity_id = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)  # JSON string
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    user = relationship("User")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "user_name": self.user.full_name if self.user else None,
+            "action": self.action,
+            "entity_type": self.entity_type,
+            "entity_id": self.entity_id,
+            "details": self.details,
+            "ip_address": self.ip_address,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

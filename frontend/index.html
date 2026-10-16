@@ -441,169 +441,6 @@
             </div>
         </section>
 
-        <!-- ═══════ Teacher Examinations Page ═══════ -->
-        <section class="page" id="page-teacher-exams">
-            <header class="page-header">
-                <h1>My Examinations</h1>
-                <p class="page-subtitle">Examinations scheduled for your assigned subjects</p>
-            </header>
-
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="data-table" id="table-teacher-my-exams">
-                        <thead>
-                            <tr>
-                                <th>Exam Name</th>
-                                <th>Subject</th>
-                                <th>Date</th>
-                                <th>Total Marks</th>
-                                <th>Active Key Version</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody><tr><td colspan="7">Loading examinations...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- ═══════ Teacher Answer Keys & Marking Schemes ═══════ -->
-        <section class="page" id="page-teacher-answer-keys">
-            <header class="page-header">
-                <h1>Answer Keys & Marking Schemes</h1>
-                <p class="page-subtitle">Upload official reference answer keys, manage versions, and configure evaluation rubrics</p>
-            </header>
-
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-                    <div class="form-group">
-                        <label for="ak-subject-select">Select Assigned Subject:</label>
-                        <select id="ak-subject-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="ak-exam-select">Select Examination:</label>
-                        <select id="ak-exam-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Question Paper Document & Versions Card -->
-            <div class="card" id="qp-summary-card" style="margin-bottom: 1.5rem; display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
-                    <div>
-                        <h2 style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span>Active Question Paper:</span>
-                            <span id="qp-active-version-badge" class="status-pill status-completed">No Paper Uploaded</span>
-                        </h2>
-                        <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.25rem;" id="qp-active-meta">
-                            No question paper uploaded yet for this examination.
-                        </p>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="btn btn-secondary" id="btn-qp-download-file" style="display: none;">📥 Download Paper</button>
-                        <button class="btn btn-secondary" id="btn-qp-preview-file" style="display: none;">👁️ Preview</button>
-                        <button class="btn btn-primary" id="btn-qp-open-upload">📄 Upload / Replace Question Paper</button>
-                        <button class="btn btn-secondary" id="btn-qp-archive-active" style="display: none;">📦 Archive</button>
-                    </div>
-                </div>
-
-                <!-- Question Paper Version History Record -->
-                <div style="background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 600;">
-                        <span>Question Paper Version History & Archival Record</span>
-                        <span id="qp-versions-count">0 versions</span>
-                    </div>
-                    <div id="qp-versions-list" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
-                </div>
-            </div>
-
-            <!-- Active Key Summary Card -->
-            <div class="card" id="ak-summary-card" style="margin-bottom: 1.5rem; display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
-                    <div>
-                        <h2 style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span>Active Answer Key:</span>
-                            <span id="ak-active-version-badge" class="status-pill status-completed">v1 Active</span>
-                        </h2>
-                        <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.25rem;" id="ak-active-meta">
-                            Uploaded by — on —
-                        </p>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="btn btn-secondary" id="btn-ak-download-file">📥 Download Key File</button>
-                        <button class="btn btn-primary" id="btn-ak-open-upload">⬆ Replace / Upload New Version</button>
-                        <button class="btn btn-secondary" id="btn-ak-archive-active" style="display: none;">📦 Archive</button>
-                    </div>
-                </div>
-
-                <!-- Version History Record -->
-                <div style="background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 600;">
-                        <span>Answer Key Version History & Archival Record</span>
-                        <span id="ak-versions-count">0 versions</span>
-                    </div>
-                    <div id="ak-versions-list" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
-                </div>
-            </div>
-
-            <!-- Exam Questions & Rubric Scheme Card -->
-            <div class="card" id="ak-questions-card" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
-                    <div>
-                        <h2>Structured Exam Questions & Marking Rubric</h2>
-                        <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.2rem;">Upload a question paper to extract questions automatically, or add them manually.</p>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="btn btn-primary" id="btn-ak-upload-qp">📄 Upload Question Paper</button>
-                        <button class="btn btn-secondary" id="btn-ak-add-question">+ Add Question Manually</button>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="data-table" id="table-ak-questions">
-                        <thead>
-                            <tr>
-                                <th>Q #</th>
-                                <th>Question Text</th>
-                                <th>Max Marks</th>
-                                <th>Reference Answer</th>
-                                <th>Rubric Criteria</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody><tr><td colspan="6">Select an examination to view questions.</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- ═══════ Teacher Completed Reviews ═══════ -->
-        <section class="page" id="page-teacher-completed-reviews">
-            <header class="page-header">
-                <h1>My Completed Reviews</h1>
-                <p class="page-subtitle">Historical log of high-risk answers reviewed and finalized by you</p>
-            </header>
-
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="data-table" id="table-teacher-completed-reviews">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Q #</th>
-                                <th>AI Mark</th>
-                                <th>Final Awarded Mark</th>
-                                <th>Decision</th>
-                                <th>Teacher Notes</th>
-                                <th>Reviewed At</th>
-                            </tr>
-                        </thead>
-                        <tbody><tr><td colspan="7">Loading completed reviews...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
         <!-- ═══════ Teacher Review Queue ═══════ -->
         <section class="page" id="page-teacher-reviews">
             <header class="page-header">
@@ -709,6 +546,105 @@
             </div>
         </section>
 
+        <!-- ═══════ Teacher Documents (Question Papers & Answer Keys) ═══════ -->
+        <section class="page" id="page-teacher-documents">
+            <header class="page-header">
+                <h1>Question Papers & Answer Keys</h1>
+                <p class="page-subtitle">Upload and manage question papers and official answer keys for your assigned examinations</p>
+            </header>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('tab-question-papers')">📄 Question Papers</button>
+                <button class="tab-btn" onclick="switchTab('tab-answer-keys')">📝 Answer Keys</button>
+            </div>
+
+            <!-- Question Papers Tab -->
+            <div class="tab-content active" id="tab-question-papers">
+                <div class="card">
+                    <h2>Upload Question Paper</h2>
+                    <form id="form-upload-qp" style="margin-top: 1rem;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="qp-exam-select">Select Examination *</label>
+                            <select id="qp-exam-select" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+                        </div>
+                        <div class="upload-area" id="qp-upload-area" style="margin-bottom: 1rem;">
+                            <div class="upload-icon">📄</div>
+                            <p>Drag & drop question paper here</p>
+                            <p class="upload-hint">PDF, PNG, JPG, JPEG (Max 50MB)</p>
+                            <input type="file" id="qp-file-input" accept=".pdf,.png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                        </div>
+                        <div id="qp-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                            Selected: <strong id="qp-selected-filename"></strong>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Question Paper</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>Uploaded Question Papers</h2>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-question-papers">
+                            <thead>
+                                <tr>
+                                    <th>Exam</th>
+                                    <th>Filename</th>
+                                    <th>Version</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded At</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="7">Loading question papers...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answer Keys Tab -->
+            <div class="tab-content" id="tab-answer-keys">
+                <div class="card">
+                    <h2>Upload Answer Key</h2>
+                    <form id="form-upload-ak" style="margin-top: 1rem;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="ak-exam-select">Select Examination *</label>
+                            <select id="ak-exam-select" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+                        </div>
+                        <div class="upload-area" id="ak-upload-area" style="margin-bottom: 1rem;">
+                            <div class="upload-icon">📝</div>
+                            <p>Drag & drop official answer key here</p>
+                            <p class="upload-hint">PDF, PNG, JPG, JPEG (Max 50MB)</p>
+                            <input type="file" id="ak-file-input" accept=".pdf,.png,.jpg,.jpeg,.bmp,.tif,.tiff" hidden>
+                        </div>
+                        <div id="ak-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                            Selected: <strong id="ak-selected-filename"></strong>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Answer Key</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2>Uploaded Answer Keys</h2>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-answer-keys">
+                            <thead>
+                                <tr>
+                                    <th>Exam</th>
+                                    <th>Filename</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="7">Loading answer keys...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ═══════ Scanner Dashboard ═══════ -->
         <section class="page" id="page-scanner-dashboard">
             <header class="page-header">
@@ -739,18 +675,13 @@
                     <div class="upload-area" id="scanner-upload-area" style="margin-bottom: 1rem;">
                         <div class="upload-icon">📤</div>
                         <p>Drag & drop handwritten answer script here</p>
-                        <p class="upload-hint">PNG, JPG, JPEG, PDF; maximum file size 25 MB</p>
-                        <input type="file" id="scanner-file-input" accept=".png,.jpg,.jpeg,.pdf" hidden>
+                        <p class="upload-hint">PNG, JPG, JPEG, PDF (Max 25MB)</p>
+                        <input type="file" id="scanner-file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf" hidden>
                     </div>
 
-                    <div id="scanner-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
-                        <div>Selected: <strong id="scanner-selected-filename"></strong></div>
-                        <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.25rem;">
-                            Type: <span id="scanner-selected-filetype" style="font-weight: 500;"></span> &bull; Size: <span id="scanner-selected-filesize" style="font-weight: 500;"></span>
-                        </div>
+                    <div id="scanner-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                        Selected: <strong id="scanner-selected-filename"></strong>
                     </div>
-
-                    <div id="scanner-upload-feedback" style="display: none; margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.88rem;"></div>
 
                     <button type="submit" class="btn btn-primary" id="btn-submit-upload" style="width: 100%;">Upload & Validate Scan</button>
                 </form>
@@ -777,6 +708,61 @@
                 </div>
             </div>
         </section>
+
+        <!-- ═══════ HOD Audit Logs ═══════ -->
+        <section class="page" id="page-audit-logs">
+            <header class="page-header">
+                <h1>System Audit Trail</h1>
+                <p class="page-subtitle">Immutable record of all security-critical and examination management actions</p>
+            </header>
+
+            <div class="card">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                    <div class="form-group" style="flex: 1; min-width: 150px;">
+                        <label for="audit-entity-filter">Entity Type</label>
+                        <select id="audit-entity-filter" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                            <option value="">All</option>
+                            <option value="user">User</option>
+                            <option value="exam">Exam</option>
+                            <option value="answer_script">Answer Script</option>
+                            <option value="question_paper">Question Paper</option>
+                            <option value="answer_key">Answer Key</option>
+                            <option value="teacher_assignment">Teacher Assignment</option>
+                            <option value="final_mark">Final Mark</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 150px;">
+                        <label for="audit-action-filter">Action</label>
+                        <select id="audit-action-filter" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                            <option value="">All</option>
+                            <option value="LOGIN">Login</option>
+                            <option value="UPLOAD_QUESTION_PAPER">Upload Question Paper</option>
+                            <option value="UPLOAD_ANSWER_KEY">Upload Answer Key</option>
+                            <option value="APPROVE_ANSWER_KEY">Approve Answer Key</option>
+                            <option value="UPLOAD_SCRIPT">Upload Script</option>
+                            <option value="SUBMIT_REVIEW">Submit Review</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadAuditLogs()">🔍 Filter</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="table-audit-logs">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Entity</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="5">Loading audit logs...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
 
         <!-- ═══════ Results Page ═══════ -->
         <section class="page" id="page-results">
@@ -912,47 +898,6 @@
             </header>
             <div class="card" id="model-info-card">
                 <div id="model-info-content"><p class="empty-state">Loading model information...</p></div>
-            </div>
-        </section>
-
-        <!-- ═══════ User Profile Page ═══════ -->
-        <section class="page" id="page-profile">
-            <header class="page-header">
-                <h1>User Profile & Account</h1>
-                <p class="page-subtitle">Your credentials, academic roles, and contact information</p>
-            </header>
-
-            <div class="card" style="max-width: 600px;">
-                <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem;">
-                    <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--color-primary-100); color: var(--color-primary-700); font-size: 1.6rem; display: flex; align-items: center; justify-content: center; font-weight: 700;" id="prof-avatar">U</div>
-                    <div>
-                        <h2 style="margin: 0; font-size: 1.3rem;" id="prof-name">User Name</h2>
-                        <span id="prof-role-badge" class="status-pill status-completed">ROLE</span>
-                    </div>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.95rem;">
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 0.5rem;">
-                        <span style="color: var(--color-text-secondary);">Username:</span>
-                        <strong id="prof-username">—</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 0.5rem;">
-                        <span style="color: var(--color-text-secondary);">Employee ID:</span>
-                        <strong id="prof-empid">—</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 0.5rem;">
-                        <span style="color: var(--color-text-secondary);">Email:</span>
-                        <strong id="prof-email">—</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 0.5rem;">
-                        <span style="color: var(--color-text-secondary);">Phone:</span>
-                        <strong id="prof-phone">—</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-bottom: 0.5rem;">
-                        <span style="color: var(--color-text-secondary);">Account Status:</span>
-                        <span class="status-pill status-completed">Active</span>
-                    </div>
-                </div>
             </div>
         </section>
     </main>
@@ -1171,253 +1116,10 @@
                 <input type="hidden" id="rescan-id">
                 <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">Upload a sharp, clean replacement scan to resolve the scan issue and re-enter evaluation.</p>
                 <div class="form-group">
-                    <input type="file" id="rescan-file" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf" required>
+                    <input type="file" id="rescan-file" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff" required>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Upload Replacement Scan</button>
             </form>
-        </div>
-    </div>
-
-    <!-- Upload Answer Key Modal -->
-    <div class="modal-backdrop" id="modal-upload-answer-key" style="display: none;">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2>Upload Official Answer Key</h2>
-                <button class="modal-close" onclick="closeModal('modal-upload-answer-key')">&times;</button>
-            </div>
-            <form id="form-upload-answer-key">
-                <input type="hidden" id="ak-modal-exam-id">
-                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
-                    Upload the official reference key file (PDF, JSON, TXT, DOCX, or images). A new active version will be created while archiving past versions.
-                </p>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="ak-modal-file">Answer Key Document / Image *</label>
-                    <input type="file" id="ak-modal-file" accept=".pdf,.json,.txt,.png,.jpg,.jpeg,.docx" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="ak-modal-questions-json">Optional Structured Questions JSON (auto-sync questions & rubrics)</label>
-                    <textarea id="ak-modal-questions-json" rows="4" placeholder='{"questions": [{"question_number": 1, "question_text": "...", "max_marks": 5.0, "reference_answer": "...", "criteria": [...]}]}'></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Upload & Activate Version</button>
-            </form>
-        </div>
-    <!-- Upload Question Paper Modal -->
-    <div class="modal-backdrop" id="modal-upload-question-paper" style="display: none;">
-        <div class="modal-card" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2>Upload Question Paper</h2>
-                <button class="modal-close" onclick="closeModal('modal-upload-question-paper')">&times;</button>
-            </div>
-            <form id="form-upload-question-paper">
-                <input type="hidden" id="qp-exam-id">
-                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
-                    Upload the exam question paper (PDF, PNG, JPG, JPEG, TXT). Questions, subquestions, and explicit marks will be extracted automatically for your review.
-                </p>
-
-                <div class="upload-area" id="qp-upload-area" style="margin-bottom: 1rem; border: 2px dashed var(--color-border); border-radius: var(--radius-sm); padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s;">
-                    <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📄</div>
-                    <p style="font-weight: 500; margin-bottom: 0.25rem;">Drag & drop question paper here, or click to browse</p>
-                    <p class="upload-hint" style="font-size: 0.82rem; color: var(--color-text-secondary);">PDF (selectable or scanned), PNG, JPG, JPEG, TXT (Max 25MB)</p>
-                    <input type="file" id="qp-file-input" accept=".pdf,.png,.jpg,.jpeg,.txt" hidden>
-                </div>
-
-                <div id="qp-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
-                    <div>Selected: <strong id="qp-selected-filename"></strong></div>
-                    <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.25rem;">
-                        Type: <span id="qp-selected-filetype" style="font-weight: 500;"></span> &bull; Size: <span id="qp-selected-filesize" style="font-weight: 500;"></span>
-                    </div>
-                </div>
-
-                <!-- Real Processing Stages Banner -->
-                <div id="qp-upload-progress" style="display: none; margin-bottom: 1rem; padding: 0.85rem; background: var(--color-surface-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
-                    <div style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
-                        <span id="qp-progress-title">Processing Question Paper...</span>
-                    </div>
-                    <div id="qp-progress-step" style="font-size: 0.8rem; color: var(--color-primary-600); font-weight: 500;">Uploading file...</div>
-                </div>
-
-                <div id="qp-upload-error" style="display: none; margin-bottom: 1rem; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.88rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;"></div>
-
-                <button type="submit" class="btn btn-primary" id="btn-submit-qp-upload" style="width: 100%;">Extract Questions Automatically</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Question Extraction Review & Refinement Modal -->
-    <div class="modal-backdrop" id="modal-review-questions" style="display: none; z-index: 1050;">
-        <div class="modal-card" style="max-width: 1200px; width: 96vw; max-height: 92vh; display: flex; flex-direction: column; padding: 0;">
-            <!-- Modal Header -->
-            <div class="modal-header" style="padding: 0.85rem 1.5rem; border-bottom: 1px solid var(--color-border);">
-                <div>
-                    <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>Review & Refine Extracted Questions</span>
-                        <span id="qp-review-doc-badge" class="status-pill status-completed" style="font-size: 0.75rem;"></span>
-                    </h2>
-                    <p style="font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 0.2rem;">
-                        Verify questions, adjust marks and numbering, and configure reference answers and rubrics.
-                    </p>
-                </div>
-                <button class="modal-close" onclick="handleCloseReviewModal()">&times;</button>
-            </div>
-
-            <!-- Global Warnings Banner -->
-            <div id="qp-review-warnings-container" style="display: none; padding: 0.6rem 1.5rem; background: #fef3c7; border-bottom: 1px solid #fcd34d; color: #92400e; font-size: 0.85rem;">
-                <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                    <span>⚠️</span>
-                    <div id="qp-review-warnings-list" style="flex: 1;"></div>
-                </div>
-            </div>
-
-            <!-- Split Content Area -->
-            <div style="display: grid; grid-template-columns: minmax(300px, 0.9fr) minmax(480px, 1.6fr); flex: 1; overflow: hidden; background: var(--color-surface); min-height: 500px;">
-                <!-- Left Pane: Document / OCR Text Preview -->
-                <div style="border-right: 1px solid var(--color-border); display: flex; flex-direction: column; overflow: hidden; background: var(--color-surface-2);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-tab-doc" style="font-size: 0.78rem; padding: 3px 8px;">🖼️ Document Preview</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-tab-text" style="font-size: 0.78rem; padding: 3px 8px;">📄 Extracted Text</button>
-                        </div>
-                        <div id="qp-preview-pager" style="display: none; font-size: 0.8rem; align-items: center; gap: 0.3rem;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-prev-page" style="padding: 1px 6px;">&lt;</button>
-                            <span id="qp-page-indicator">Page 1 / 1</span>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-next-page" style="padding: 1px 6px;">&gt;</button>
-                        </div>
-                    </div>
-
-                    <!-- Doc Preview Content -->
-                    <div id="qp-tab-content-doc" style="flex: 1; overflow: auto; padding: 1rem; text-align: center;">
-                        <img id="qp-doc-img-preview" src="" alt="Document Preview" style="max-width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-sm); box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: none;">
-                        <div id="qp-doc-empty-preview" style="color: var(--color-text-secondary); font-size: 0.85rem; padding: 2rem;">No visual image preview available for this format. Switch to 'Extracted Text' tab.</div>
-                    </div>
-
-                    <!-- Text Preview Content -->
-                    <div id="qp-tab-content-text" style="display: none; flex: 1; overflow: auto; padding: 1rem;">
-                        <pre id="qp-raw-extracted-text" style="white-space: pre-wrap; font-family: monospace; font-size: 0.82rem; background: var(--color-surface); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); margin: 0; line-height: 1.4;"></pre>
-                    </div>
-                </div>
-
-                <!-- Right Pane: Extracted Questions Review & Configuration -->
-                <div style="display: flex; flex-direction: column; overflow: hidden;">
-                    <!-- Bulk Marks & Action Tools Bar -->
-                    <div style="background: var(--color-surface-2); border-bottom: 1px solid var(--color-border); padding: 0.5rem 1rem; font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                            <!-- View Toggle & Search/Filter -->
-                            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                <div class="btn-group" style="display: flex; border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden;">
-                                    <button type="button" class="btn btn-sm btn-primary" id="btn-qp-view-table" style="padding: 2px 8px; font-size: 0.78rem;">📋 Compact Table</button>
-                                    <button type="button" class="btn btn-sm btn-secondary" id="btn-qp-view-cards" style="padding: 2px 8px; font-size: 0.78rem;">🃏 Cards</button>
-                                </div>
-                                <input type="text" id="qp-search-filter" placeholder="🔍 Search Q# or text..." style="padding: 2px 6px; font-size: 0.78rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); width: 140px;">
-                                <select id="qp-status-filter" style="padding: 2px 4px; font-size: 0.78rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
-                                    <option value="all">All Questions</option>
-                                    <option value="missing">Marks Required</option>
-                                    <option value="confident">Confident Marks</option>
-                                </select>
-                            </div>
-                            <!-- Bulk Confirm Button & Add Empty -->
-                            <div style="display: flex; gap: 0.35rem; align-items: center;">
-                                <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-bulk-confirm" style="font-size: 0.75rem; padding: 2px 8px; color: #065f46; background: #ecfdf5; border-color: #a7f3d0;" title="Confirm detected marks for review">✓ Bulk Confirm Marks</button>
-                                <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-add-empty-q" style="font-size: 0.75rem; padding: 2px 8px;">+ Add Question</button>
-                            </div>
-                        </div>
-
-                        <!-- Bulk Marks Assignment Controls -->
-                        <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; background: #fff; padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.76rem;">
-                            <span style="font-weight: 600; color: var(--color-text-secondary);">⚡ Bulk Marks:</span>
-                            <select id="qp-bulk-section-select" style="padding: 1px 4px; font-size: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); max-width: 110px;">
-                                <option value="">Section...</option>
-                            </select>
-                            <input type="number" id="qp-bulk-section-marks" placeholder="Marks" step="0.5" min="0.5" style="width: 48px; padding: 1px 4px; font-size: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-apply-section-marks" style="padding: 1px 5px; font-size: 0.75rem;">Apply to Section</button>
-
-                            <span style="color: var(--color-border); margin: 0 2px;">|</span>
-
-                            <span>Range:</span>
-                            <input type="number" id="qp-bulk-range-from" placeholder="From" style="width: 45px; padding: 1px 4px; font-size: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
-                            <span>–</span>
-                            <input type="number" id="qp-bulk-range-to" placeholder="To" style="width: 45px; padding: 1px 4px; font-size: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
-                            <input type="number" id="qp-bulk-range-marks" placeholder="Marks" step="0.5" min="0.5" style="width: 48px; padding: 1px 4px; font-size: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-apply-range-marks" style="padding: 1px 5px; font-size: 0.75rem;">Apply to Range</button>
-
-                            <span style="color: var(--color-border); margin: 0 2px;">|</span>
-
-                            <input type="number" id="qp-bulk-unresolved-marks" placeholder="Marks" step="0.5" min="0.5" style="width: 48px; padding: 1px 4px; font-size: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-apply-unresolved-marks" style="padding: 1px 5px; font-size: 0.75rem;">Apply Unresolved</button>
-                        </div>
-                    </div>
-
-                    <!-- Compact Table View Container -->
-                    <div id="qp-review-table-container" style="flex: 1; overflow-y: auto; background: #fff;">
-                        <table class="data-table" id="table-qp-review-compact" style="font-size: 0.82rem; width: 100%; border-collapse: collapse;">
-                            <thead style="position: sticky; top: 0; background: var(--color-surface); z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
-                                <tr>
-                                    <th style="width: 30px; text-align: center;"><input type="checkbox" id="qp-select-all-qs"></th>
-                                    <th style="width: 45px;">Q #</th>
-                                    <th style="width: 90px;">Section</th>
-                                    <th>Question Text</th>
-                                    <th style="width: 75px;">Marks</th>
-                                    <th style="width: 140px;">Status / Provenance</th>
-                                    <th style="width: 50px; text-align: center;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="qp-review-table-body">
-                                <!-- Rendered dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Bulk Selection Bar (appears when rows selected) -->
-                    <div id="qp-bulk-selection-bar" style="display: none; background: #e0f2fe; padding: 0.35rem 1rem; border-top: 1px solid #bae6fd; font-size: 0.78rem; justify-content: space-between; align-items: center;">
-                        <span><strong id="qp-selected-count">0</strong> questions selected</span>
-                        <div style="display: flex; gap: 0.4rem; align-items: center;">
-                            <input type="number" id="qp-selected-marks-input" placeholder="Set marks..." step="0.5" min="0.5" style="width: 65px; padding: 1px 4px; font-size: 0.75rem;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-set-selected-marks" style="padding: 1px 6px; font-size: 0.75rem;">Set Marks</button>
-                            <button type="button" class="btn btn-danger btn-sm" id="btn-qp-delete-selected" style="padding: 1px 6px; font-size: 0.75rem; background: #fee2e2; color: #b91c1c; border-color: #fca5a5;">Delete</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btn-qp-undo-delete" style="display: none; padding: 1px 6px; font-size: 0.75rem;">⤺ Undo Delete</button>
-                        </div>
-                    </div>
-
-                    <!-- Detailed Cards Container (toggleable) -->
-                    <div id="qp-review-cards-list" style="display: none; flex: 1; overflow-y: auto; padding: 1rem 1.25rem; flex-direction: column; gap: 1rem;">
-                        <!-- Question review cards rendered dynamically -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="modal-footer" style="padding: 0.75rem 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; background: var(--color-surface);">
-                <div style="font-size: 0.88rem; color: var(--color-text-secondary);">
-                    Total: <strong id="qp-footer-total-qs">0</strong> questions &bull; Total Marks: <strong id="qp-footer-total-marks">0</strong>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="handleCloseReviewModal()">Cancel</button>
-                    <button type="button" class="btn btn-secondary" id="btn-qp-save-only">Save Questions (Rubrics Later)</button>
-                    <button type="button" class="btn btn-primary" id="btn-qp-save-and-continue">Save Questions & Rubrics</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reusable Destructive Action Confirmation Modal -->
-    <div class="modal-backdrop" id="modal-confirm-action" style="display: none; z-index: 1100;">
-        <div class="modal-card" style="max-width: 480px;">
-            <div class="modal-header">
-                <h2 id="modal-confirm-title" style="color: #b91c1c; display: flex; align-items: center; gap: 0.5rem;">⚠️ Confirm Action</h2>
-                <button class="modal-close" onclick="closeModal('modal-confirm-action')">&times;</button>
-            </div>
-            <div style="padding: 0.5rem 0 1.25rem 0;">
-                <p id="modal-confirm-message" style="font-size: 0.92rem; line-height: 1.5; color: var(--color-text); margin-bottom: 0.75rem;">
-                    Are you sure you want to proceed?
-                </p>
-                <div id="modal-confirm-details" style="font-size: 0.82rem; background: var(--color-surface-2); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); color: var(--color-text-secondary); line-height: 1.4;">
-                    This action cannot be undone.
-                </div>
-            </div>
-            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-confirm-action')">Cancel</button>
-                <button type="button" class="btn btn-danger" id="btn-confirm-action-submit" style="background: #dc2626; color: white; border: none;">Confirm & Proceed</button>
-            </div>
         </div>
     </div>
 

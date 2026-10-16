@@ -112,19 +112,7 @@ class Config:
             "DEBUG": "debug",
             "LOG_LEVEL": "log_level",
             "LOG_FILE": "log_file",
-            "DB_PATH": "db_path",
-            "STORAGE_DIR": "storage_dir",
-            "JWT_SECRET": "jwt_secret",
-            "JWT_ALGORITHM": "jwt_algorithm",
-            "JWT_EXPIRE_MINUTES": "jwt_expire_minutes",
-            "MAX_UPLOAD_SIZE": "max_upload_size_bytes",
-            "MAX_PDF_PAGES": "max_pdf_pages",
-            "PDF_RENDER_DPI": "pdf_render_dpi",
-            "PDF_MAX_RENDER_WIDTH": "pdf_max_render_width",
-            "PDF_MAX_RENDER_HEIGHT": "pdf_max_render_height",
-            "PDF_MAX_RENDER_PIXELS": "pdf_max_render_pixels",
-            "MAX_PAGE_DIMENSION": "max_page_dimension",
-        }
+        Accept Incoming}
         for env_suffix, attr in mapping.items():
             value = os.environ.get(f"{prefix}{env_suffix}")
             if value is not None:
