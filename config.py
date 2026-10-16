@@ -112,7 +112,7 @@ class Config:
             "DEBUG": "debug",
             "LOG_LEVEL": "log_level",
             "LOG_FILE": "log_file",
-        Accept Incoming}
+        }
         for env_suffix, attr in mapping.items():
             value = os.environ.get(f"{prefix}{env_suffix}")
             if value is not None:
