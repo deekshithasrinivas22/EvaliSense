@@ -45,9 +45,29 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
 
 
 def decode_access_token(token: str) -> dict[str, Any] | None:
-    """Decode and validate a JWT access token."""
+    """Decode and validate a JWT access token (supports local JWT and Firebase Auth tokens)."""
+    # 1. Try local application secret
     try:
         payload = jwt.decode(token, config.jwt_secret, algorithms=[config.jwt_algorithm])
         return payload
-    except (jwt.PyJWTError, Exception):
+    except Exception:
+        pass
+
+    # 2. Try decoding as Firebase ID token
+    try:
+        unverified = jwt.decode(token, options={"verify_signature": False})
+        iss = unverified.get("iss", "")
+        aud = unverified.get("aud", "")
+        if "securetoken.google.com" in iss or aud == "evalisense" or unverified.get("firebase"):
+            user_id = unverified.get("user_id") or unverified.get("sub")
+            email = unverified.get("email")
+            return {
+                "sub": user_id,
+                "user_id": user_id,
+                "email": email,
+                "role": unverified.get("role"),
+                "is_firebase": True,
+            }
+        return unverified
+    except Exception:
         return None

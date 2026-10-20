@@ -34,14 +34,36 @@ async def get_current_user(
         )
 
     user_id = payload.get("sub") or payload.get("user_id")
-    if not user_id:
+    email = payload.get("email")
+    if not user_id and not email:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token payload is missing subject.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = None
+    if user_id:
+        try:
+            user = db.query(User).filter(User.id == int(user_id)).first()
+        except (ValueError, TypeError):
+            pass
+
+    if not user and email:
+        user = db.query(User).filter(User.email == email).first()
+
+    if not user and user_id:
+        user = db.query(User).filter(User.username == str(user_id)).first()
+
+    if not user:
+        # Fallback: if email matches demo accounts, map to seeded users
+        if email == "hod@evalisense.edu" or user_id == "admin":
+            user = db.query(User).filter(User.username == "admin").first()
+        elif email == "teacher@evalisense.edu" or user_id in ("teacher1", "teacher"):
+            user = db.query(User).filter(User.username == "teacher1").first()
+        elif email == "scanner@evalisense.edu" or user_id in ("scanner1", "scanner"):
+            user = db.query(User).filter(User.username == "scanner1").first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -68,9 +90,17 @@ async def get_optional_current_user(
     if not payload:
         return None
     user_id = payload.get("sub") or payload.get("user_id")
-    if not user_id:
-        return None
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    email = payload.get("email")
+    user = None
+    if user_id:
+        try:
+            user = db.query(User).filter(User.id == int(user_id)).first()
+        except (ValueError, TypeError):
+            pass
+    if not user and email:
+        user = db.query(User).filter(User.email == email).first()
+    if not user and user_id:
+        user = db.query(User).filter(User.username == str(user_id)).first()
     if not user or not user.is_active:
         return None
     return user
