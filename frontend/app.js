@@ -1712,6 +1712,128 @@ document.addEventListener('DOMContentLoaded', () => {
         openEditQuestionModal(null);
     });
 
+    // 5b. Question Paper Upload & Auto-Extraction
+    let _extractedQuestions = [];
+
+    document.getElementById('btn-tkr-upload-qp')?.addEventListener('click', () => {
+        const sec = document.getElementById('qp-upload-section');
+        if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    });
+
+    const qpUploadArea = document.getElementById('qp-upload-area');
+    const qpFileInput = document.getElementById('qp-file-input');
+
+    if (qpUploadArea && qpFileInput) {
+        qpUploadArea.addEventListener('click', () => qpFileInput.click());
+        qpUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); qpUploadArea.classList.add('dragover'); });
+        qpUploadArea.addEventListener('dragleave', () => qpUploadArea.classList.remove('dragover'));
+        qpUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            qpUploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleQPUpload(e.dataTransfer.files[0]);
+        });
+        qpFileInput.addEventListener('change', () => {
+            if (qpFileInput.files.length) handleQPUpload(qpFileInput.files[0]);
+        });
+    }
+
+    async function handleQPUpload(file) {
+        const statusEl = document.getElementById('qp-extraction-status');
+        const statusText = document.getElementById('qp-extraction-status-text');
+        const resultEl = document.getElementById('qp-extraction-result');
+
+        if (statusEl) { statusEl.style.display = 'block'; }
+        if (resultEl) { resultEl.style.display = 'none'; }
+        if (statusText) statusText.textContent = `Extracting questions from "${file.name}"...`;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const data = await apiPost('/api/extract-questions', formData, false);
+
+            _extractedQuestions = data.questions || [];
+
+            if (statusEl) statusEl.style.display = 'none';
+
+            if (_extractedQuestions.length === 0) {
+                alert('No questions could be extracted from this file. Please check the format or try a different file.');
+                return;
+            }
+
+            // Show extraction result
+            const summaryEl = document.getElementById('qp-extraction-summary');
+            if (summaryEl) {
+                summaryEl.textContent = `${data.total_questions} questions found • Total: ${data.total_marks} marks • From: ${escapeHtml(file.name)}`;
+            }
+
+            const previewEl = document.getElementById('qp-extracted-questions-preview');
+            if (previewEl) {
+                previewEl.innerHTML = _extractedQuestions.map((q, i) => `
+                    <div style="padding: 0.65rem; margin-bottom: 0.5rem; background: white; border: 1px solid #e5e7eb; border-radius: var(--radius-sm);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <strong style="color: var(--color-primary-600);">Q${q.question_number}</strong>
+                            <span style="background: #eef2ff; color: #4338ca; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">${q.max_marks} marks</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.88rem; color: var(--color-text);">${escapeHtml(q.question_text.substring(0, 200))}${q.question_text.length > 200 ? '...' : ''}</p>
+                        ${q.criteria.length ? `<small style="color: var(--color-text-secondary);">${q.criteria.length} sub-criteria detected</small>` : ''}
+                    </div>
+                `).join('');
+            }
+
+            if (resultEl) resultEl.style.display = 'block';
+
+        } catch (err) {
+            if (statusEl) statusEl.style.display = 'none';
+            alert(`Question extraction failed: ${err.message}`);
+        }
+    }
+
+    document.getElementById('btn-qp-import')?.addEventListener('click', async () => {
+        if (!_extractedQuestions.length) {
+            alert('No extracted questions to import.');
+            return;
+        }
+        if (!activeExamId) {
+            alert('Please select an examination first before importing questions.');
+            return;
+        }
+
+        showLoading(`Importing ${_extractedQuestions.length} questions into exam rubric...`);
+        try {
+            for (const q of _extractedQuestions) {
+                const qId = `q_${activeExamId}_${q.question_number}`;
+                const rubricData = {
+                    question: q.question_text,
+                    max_marks: q.max_marks,
+                    reference_answer: q.reference_answer || '',
+                    criteria: q.criteria || []
+                };
+
+                await window.EvaliSenseDB.fsSetDoc('questions', qId, {
+                    exam_id: activeExamId,
+                    question_number: q.question_number,
+                    question_text: q.question_text,
+                    max_marks: q.max_marks,
+                    reference_answer: q.reference_answer || '',
+                    criteria: q.criteria || [],
+                    rubric_json: JSON.stringify(rubricData)
+                }, true);
+            }
+
+            // Hide upload section and refresh
+            const sec = document.getElementById('qp-upload-section');
+            if (sec) sec.style.display = 'none';
+            _extractedQuestions = [];
+
+            alert(`✓ Successfully imported ${_extractedQuestions.length || 'all'} questions with marking rubrics!`);
+            refreshActiveExamData();
+        } catch (err) {
+            alert(`Import failed: ${err.message}`);
+        } finally {
+            hideLoading();
+        }
+    });
+
     // 6. Question & Rubric Form Submit
     document.getElementById('form-edit-question-rubric')?.addEventListener('submit', async (e) => {
         e.preventDefault();
