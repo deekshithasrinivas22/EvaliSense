@@ -1,0 +1,26 @@
+<div class="modal-backdrop" id="modal-upload-ak" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Upload New Answer Key Version</h2>
+            <button class="modal-close" onclick="closeModal('modal-upload-ak')">&times;</button>
+        </div>
+        <form id="form-upload-ak-modal">
+            <input type="hidden" id="ak-modal-exam-id">
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">Uploading a replacement creates a new version record and supersedes the current active version without deleting history.</p>
+            <div class="upload-area" id="ak-modal-upload-area" style="margin-bottom: 1rem; border: 2px dashed var(--color-border); padding: 1.5rem; text-align: center; border-radius: var(--radius-sm); cursor: pointer;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                <p style="margin: 0; font-weight: 500;">Click or drag & drop official answer key here</p>
+                <small style="color: var(--color-text-secondary);">Supported: PDF, TXT, PNG, JPG, JPEG (Max 50MB)</small>
+                <input type="file" id="ak-modal-file-input" accept=".pdf,.txt,.png,.jpg,.jpeg,.bmp,.tif,.tiff" style="display: none;">
+            </div>
+            <div id="ak-modal-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm); font-size: 0.9rem;">
+                Selected: <strong id="ak-modal-filename-display"></strong>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="ak-modal-notes">Version Notes (optional)</label>
+                <textarea id="ak-modal-notes" rows="2" placeholder="e.g. Revised marking scheme following faculty moderation"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" id="btn-submit-ak-modal" style="width: 100%;">Upload & Save Version</button>
+        </form>
+    </div>
+</div>

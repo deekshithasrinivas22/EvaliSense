@@ -1,0 +1,17 @@
+<div class="modal-backdrop" id="modal-add-exam" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Create Examination</h2>
+            <button class="modal-close" onclick="closeModal('modal-add-exam')">&times;</button>
+        </div>
+        <form id="form-add-exam">
+            <div class="form-group"><label>Subject</label><select id="exam-subject-select" required></select></div>
+            <div class="form-group"><label>Exam Name</label><input type="text" id="exam-name" required placeholder="Midterm Examination 2"></div>
+            <div class="form-group"><label>Exam Type</label><select id="exam-type"><option value="INTERNAL">Internal Assessment</option><option value="SEMESTER">Semester Final</option><option value="QUIZ">Quiz / Test</option></select></div>
+            <div class="form-group"><label>Total Marks</label><input type="number" id="exam-marks" required value="10"></div>
+            <div class="form-group"><label>Date (YYYY-MM-DD)</label><input type="date" id="exam-date"></div>
+            <div class="form-group"><label>Academic Year</label><input type="text" id="exam-year" value="2026-2027"></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Schedule Exam</button>
+        </form>
+    </div>
+</div>

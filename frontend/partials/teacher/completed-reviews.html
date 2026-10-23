@@ -1,0 +1,34 @@
+<section class="page" id="page-teacher-completed-reviews">
+    <header class="page-header">
+        <h1>Completed Reviews</h1>
+        <p class="page-subtitle">Verified student evaluation history with finalized marks and teacher rationale</p>
+    </header>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div class="form-group" style="margin: 0; min-width: 250px;">
+                <input type="text" id="completed-reviews-search" placeholder="Search by student USN or name..." style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+            </div>
+            <button class="btn btn-secondary" id="btn-refresh-completed-reviews">🔄 Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="table-teacher-completed-reviews">
+                <thead>
+                    <tr>
+                        <th>Exam</th>
+                        <th>Student USN</th>
+                        <th>Question #</th>
+                        <th>AI Mark</th>
+                        <th>Teacher Final Mark</th>
+                        <th>Max Marks</th>
+                        <th>Review Date</th>
+                        <th>Teacher Notes</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="9">Loading completed reviews...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

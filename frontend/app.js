@@ -30,6 +30,17 @@ let activeSubjectId = null;
 // Utility & Formatting Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+function htrProgressText(progress) {
+    const seconds = Number(progress.elapsed_seconds || 0).toFixed(0);
+    const page = progress.total_pages > 1 ? `Page ${progress.page_number}/${progress.total_pages}: ` : '';
+    if (progress.phase === 'loading_model') return `${page}Loading the handwriting model (first run takes longer)… ${seconds}s`;
+    if (progress.phase === 'segmenting') return `${page}Detecting handwriting lines… ${seconds}s`;
+    if (progress.phase === 'recognizing') return `${page}Recognizing lines ${progress.completed_lines || 0}/${progress.total_lines || '?'}… ${seconds}s`;
+    if (progress.phase === 'failed') return `Recognition failed: ${progress.message || 'Please retry.'}`;
+    if (progress.phase === 'completed') return `Recognition complete in ${seconds}s.`;
+    return `${page}Preparing recognition… ${seconds}s`;
+}
+
 function formatDate(val) {
     if (!val) return '—';
     try {
@@ -330,7 +341,8 @@ function showPage(pageId) {
     if (nav) nav.classList.add('active');
 
     // Page Specific Loaders
-    if (pageId === 'dashboard') refreshDashboard();
+    if (pageId === 'evaluate') loadDemoContext();
+    else if (pageId === 'dashboard') refreshDashboard();
     else if (pageId === 'teacher-dashboard') loadTeacherDashboard();
     else if (pageId === 'teacher-exams') loadTeacherExams();
     else if (pageId === 'teacher-keys-rubrics') loadTeacherKeysAndRubrics();
@@ -536,6 +548,9 @@ function filterExamsBySubject(allExams) {
     examSelect.innerHTML = '<option value="">Select examination...</option>' +
         filtered.map(e => `<option value="${e.id}" ${activeExamId === e.id ? 'selected' : ''}>${escapeHtml(e.name || e.exam_name)}</option>`).join('');
 
+    if (!filtered.some(e => e.id === activeExamId)) {
+        activeExamId = '';
+    }
     if (filtered.length && !activeExamId) {
         activeExamId = filtered[0].id;
         examSelect.value = activeExamId;
@@ -549,7 +564,12 @@ function filterExamsBySubject(allExams) {
     refreshActiveExamData();
 }
 
+let examRefreshVersion = 0;
 async function refreshActiveExamData() {
+    const refreshVersion = ++examRefreshVersion;
+    const selectedExam = activeExamId;
+    window.dispatchEvent(new Event('evalisense-exam-change'));
+    resetActiveKeyDisplay();
     if (!activeExamId) {
         resetActiveKeyDisplay();
         return;
@@ -561,19 +581,26 @@ async function refreshActiveExamData() {
             window.EvaliSenseDB.fsGetWhere('questions', 'exam_id', '==', activeExamId)
         ]);
 
+        if (refreshVersion !== examRefreshVersion || selectedExam !== activeExamId) return;
         // Render Active Answer Key Card (Sort descending by version)
-        keys.sort((a, b) => (b.version || 1) - (a.version || 1));
-        const activeKey = keys.find(k => k.is_active) || keys[0];
+        const storedKeys = window.EvaliSenseDB.actualAnswerKeys(keys);
+        const activeKey = window.EvaliSenseDB.activeStoredAnswerKey(storedKeys, selectedExam);
 
         renderActiveKeyCard(activeKey);
-        renderVersionHistoryTable(keys);
-        renderStructuredQuestions(questions);
+        renderVersionHistoryTable(storedKeys);
+        renderStructuredQuestions(paperQuestionsOnly(questions, selectedExam));
     } catch (err) {
         console.error('Error refreshing active exam data:', err);
     }
 }
 
 function resetActiveKeyDisplay() {
+    const replaceButton = document.getElementById('btn-tkr-replace');
+    if (replaceButton) { replaceButton.disabled = !activeExamId; replaceButton.onclick = () => openUploadKeyModal(); }
+    for (const id of ['btn-tkr-download', 'btn-tkr-extract', 'btn-tkr-approve']) {
+        const button = document.getElementById(id);
+        if (button) { button.disabled = true; button.onclick = null; }
+    }
     const elVerBadge = document.getElementById('tkr-key-version-badge');
     const elAppBadge = document.getElementById('tkr-key-approval-badge');
     const elFilename = document.getElementById('tkr-key-filename');
@@ -599,6 +626,12 @@ function resetActiveKeyDisplay() {
 }
 
 function renderActiveKeyCard(key) {
+    const replaceButton = document.getElementById('btn-tkr-replace');
+    if (replaceButton) { replaceButton.disabled = !activeExamId; replaceButton.onclick = () => openUploadKeyModal(); }
+    for (const id of ['btn-tkr-download', 'btn-tkr-extract', 'btn-tkr-approve']) {
+        const button = document.getElementById(id);
+        if (button) { button.disabled = !key; button.onclick = null; }
+    }
     const elVerBadge = document.getElementById('tkr-key-version-badge');
     const elAppBadge = document.getElementById('tkr-key-approval-badge');
     const elFilename = document.getElementById('tkr-key-filename');
@@ -664,22 +697,16 @@ function renderActiveKeyCard(key) {
 }
 
 function downloadKeyFile(key) {
-    if (!key) return;
-    const filename = key.original_filename || key.filename || 'answer_key.pdf';
-    // Create text or simulated file download
-    const content = key.extracted_text || `Official Marking Scheme for Examination.\nFile: ${filename}\nVersion: ${key.version}\nStatus: ${key.status}`;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename.endsWith('.pdf') ? filename.replace('.pdf', '.txt') : filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!key?.file_id || !/^[a-f0-9]{32}$/.test(key.file_id)) return alert('This legacy entry has no stored original file. Upload the actual answer key first.');
+    const link = document.createElement('a');
+    link.href = `${API_BASE}/api/answer-key-files/${key.file_id}`;
+    link.download = key.original_filename || 'answer-key';
+    document.body.appendChild(link); link.click(); link.remove();
 }
 
 function openUploadKeyModal() {
+    if (!activeExamId) return alert('Select an examination before uploading an answer key.');
+    window.dispatchEvent(new Event('evalisense-key-modal-open'));
     const examIdInput = document.getElementById('ak-modal-exam-id');
     if (examIdInput) examIdInput.value = activeExamId;
     openModal('modal-upload-ak');
@@ -687,26 +714,15 @@ function openUploadKeyModal() {
 
 function openExtractPreviewModal(key) {
     const textEl = document.getElementById('extract-preview-text');
-    if (textEl) {
-        textEl.textContent = key.extracted_text ||
-            `OFFICIAL MARKING SCHEME EXTRACT (TrOCR / PDF Stream):\n\n` +
-            `Course: Database Management Systems (CS501)\n` +
-            `Examination: Midterm Assessment 1\n` +
-            `Approved Key Version: ${key.version || 2}\n\n` +
-            `Q1: State and explain the ACID properties of database transactions.\n` +
-            `Model Answer: Atomicity ensures all actions in a transaction execute completely or none at all. Consistency preserves database integrity constraints across states. Isolation ensures concurrent transactions execute without cross-interference. Durability guarantees committed changes persist permanently.\n\n` +
-            `Q2: Differentiate between B-Tree and B+ Tree index structures.\n` +
-            `Model Answer: B-Trees store data pointers in all nodes; B+ Trees store data strictly in leaf nodes linked as a sequence list for high range scan efficiency.\n\n` +
-            `[Verification Note]: All reference answers and criteria are aligned with current curriculum.`;
-    }
+    if (textEl) textEl.textContent = key?.extracted_text || 'No extracted answer-key text is stored. Upload the actual answer key file.';
     openModal('modal-extract-preview');
 }
 
 async function approveActiveKey(key) {
-    if (!key) return;
+    if (!key || key.exam_id !== activeExamId || key.source !== 'uploaded_answer_key') return alert('Select the examination for this uploaded key first.');
     showLoading('Validating questions and approving answer key...');
     try {
-        const questions = await window.EvaliSenseDB.fsGetWhere('questions', 'exam_id', '==', activeExamId);
+        const questions = paperQuestionsOnly(await window.EvaliSenseDB.fsGetWhere('questions', 'exam_id', '==', key.exam_id), key.exam_id);
         if (!questions.length) {
             throw new Error('Cannot approve answer key: Examination has no defined questions.');
         }
@@ -766,7 +782,7 @@ function renderVersionHistoryTable(keys) {
         return;
     }
 
-    tbody.innerHTML = keys.map(k => {
+    tbody.innerHTML = keys.map((k, index) => {
         const verNum = k.version || 1;
         const filename = k.original_filename || k.filename || 'Unnamed file';
         const uploader = k.uploader_name || k.uploaded_by || 'Dr. Marcus Thorne';
@@ -787,11 +803,47 @@ function renderVersionHistoryTable(keys) {
                 <td>${stateBadge}</td>
                 <td>${appBadge}</td>
                 <td>
-                    <button class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.75rem;" onclick='downloadKeyFile(${JSON.stringify(k)})'>📥 Download</button>
+                    <button class="btn btn-secondary" style="padding: 2px 7px; font-size: 0.75rem;" data-key-download="${index}">📥 Download</button>
                 </td>
             </tr>
         `;
     }).join('');
+    tbody.querySelectorAll('[data-key-download]').forEach(button => {
+        button.onclick = () => downloadKeyFile(keys[Number(button.dataset.keyDownload)]);
+    });
+}
+
+// Legacy demo IDs (q_1_1, etc.) have no paper provenance. Never render them here.
+function paperQuestionsOnly(questions, examId) {
+    return questions.filter(q => q.exam_id === examId &&
+        (q.source === 'question_paper' || q.id === `q_${examId}_${q.question_number}`));
+}
+function parseChoiceLines(value) {
+    return value.split('\n').filter(line => line.trim()).map(line => {
+        const split = line.indexOf('|');
+        return {label: split < 0 ? '' : line.slice(0, split).trim().toUpperCase(),
+                text: split < 0 ? line.trim() : line.slice(split + 1).trim()};
+    });
+}
+function validChoices(options) {
+    return options.length >= 2 && options.every(o => /^[A-H]$/.test(o.label) && o.text) &&
+        new Set(options.map(o => o.label)).size === options.length;
+}
+function referenceAnswerMessage(q) {
+    if (q.reference_match_status === 'type_mismatch') return 'The answer key and question paper disagree on MCQ versus written-answer type. Check the question type and numbering.';
+    if (q.reference_match_status === 'ambiguous') return 'More than one key answer matches this number. Check the section and numbering.';
+    if (q.reference_match_status === 'option_needs_review') return 'The key answer could not be matched to an MCQ choice. Check the uploaded key and choices.';
+    if (q.reference_match_status === 'unmatched') return 'No matching numbered answer in the uploaded key. Check the section and question number.';
+    return 'Upload an answer key for this examination to fill the reference answer automatically.';
+}
+
+function questionTypeLabel(q) {
+    return q.question_type === 'MCQ' ? 'MCQ' : q.question_type === 'WRITTEN' ? 'Written answer' : 'Type needs review';
+}
+function questionOptionsHtml(q) {
+    return q.question_type === 'MCQ' && Array.isArray(q.options) ?
+        `<ol style="list-style: none; padding-left: 0;">${q.options.map(o =>
+            `<li><strong>${escapeHtml(o.label)}.</strong> ${escapeHtml(o.text)}</li>`).join('')}</ol>` : '';
 }
 
 function renderStructuredQuestions(questions) {
@@ -799,11 +851,11 @@ function renderStructuredQuestions(questions) {
     if (!container) return;
 
     if (!questions.length) {
-        container.innerHTML = `<p class="empty-state">No questions defined for this examination yet. Click "+ Add Question & Rubric" above.</p>`;
+        container.innerHTML = `<p class="empty-state">No imported question paper for this examination. Upload a PDF/TXT question paper, review the preview, and import it. Legacy demo questions are hidden.</p>`;
         return;
     }
 
-    questions.sort((a, b) => a.question_number - b.question_number);
+    questions.sort((a, b) => (a.paper_order || a.question_number) - (b.paper_order || b.question_number));
 
     container.innerHTML = questions.map(q => {
         let criteriaList = [];
@@ -835,17 +887,19 @@ function renderStructuredQuestions(questions) {
                 <div class="question-header">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="question-number-badge">Question #${q.question_number}</span>
-                        <span style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">(${q.max_marks} Maximum Marks)</span>
-                        <span class="badge-neutral" style="font-size: 0.75rem;">${criteriaList.length} Rubric Criteria</span>
+                        <span style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">(${q.max_marks > 0 ? escapeHtml(q.max_marks) + ' Maximum Marks' : 'Marks need review'})</span>
+                        <span class="badge-neutral" style="font-size: 0.75rem;">${escapeHtml(questionTypeLabel(q))} · ${criteriaList.length} Rubric Criteria</span>
                     </div>
                     <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 0.8rem;" onclick="openEditQuestionModal('${q.id}')">✏️ Edit Question & Rubric</button>
                 </div>
 
                 <p style="font-size: 0.92rem; color: var(--color-text); margin: 0.5rem 0 0.75rem 0;">${escapeHtml(q.question_text)}</p>
+                ${questionOptionsHtml(q)}
 
                 <div style="background: var(--color-surface-2); padding: 0.75rem; border-radius: var(--radius-sm); border-left: 3px solid #6366f1; margin-bottom: 0.75rem;">
                     <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #4338ca; margin-bottom: 0.25rem;">Reference Answer / Marking Scheme:</div>
-                    <div style="font-size: 0.88rem; color: var(--color-text);">${escapeHtml(q.reference_answer || 'No reference answer provided.')}</div>
+                    <div style="font-size: 0.88rem; color: var(--color-text); white-space: pre-wrap;">${escapeHtml(q.reference_answer || referenceAnswerMessage(q))}</div>
+                    ${q.reference_source === 'answer_key' && q.reference_answer ? `<small>From uploaded answer key v${Number(q.reference_key_version) || 1} · review before approval</small>` : q.reference_source === 'manual' ? '<small>Teacher-edited reference answer</small>' : ''}
                 </div>
 
                 ${criteriaList.length ? `
@@ -913,6 +967,8 @@ async function openEditQuestionModal(questionId) {
         ];
     }
 
+    document.getElementById('eq-question-type').value = currentEditingQuestion?.question_type || 'WRITTEN';
+    document.getElementById('eq-options').value = (currentEditingQuestion?.options || []).map(o => `${o.label}|${o.text}`).join('\n');
     renderCriteriaRows();
     openModal('modal-edit-question-rubric');
 }
@@ -941,7 +997,7 @@ function renderCriteriaRows() {
         <div style="background: #f8fafc; border: 1px solid var(--color-border); padding: 0.75rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.5rem;">
             <div style="display: flex; gap: 0.5rem; align-items: center;">
                 <input type="text" placeholder="Criterion description (e.g. Explains Atomicity)" value="${escapeHtml(c.description)}" style="flex: 1; padding: 0.45rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.88rem;" oninput="updateCriterionDesc(${idx}, this.value)">
-                <input type="number" step="0.5" min="0" placeholder="Marks" value="${c.marks}" style="width: 80px; padding: 0.45rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 700;" oninput="updateCriterionMarks(${idx}, this.value)">
+                <input type="number" step="any" min="0" placeholder="Marks" value="${c.marks}" style="width: 80px; padding: 0.45rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 700;" oninput="updateCriterionMarks(${idx}, this.value)">
                 <button type="button" class="btn btn-secondary" style="padding: 0.45rem 0.65rem; color: #b91c1c;" onclick="removeCriterion(${idx})">✕</button>
             </div>
             <input type="text" placeholder="Keywords (comma-separated, e.g. atomicity, all-or-nothing, abort)" value="${escapeHtml((c.keywords || []).join(', '))}" style="width: 100%; padding: 0.4rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.82rem;" oninput="updateCriterionKeywords(${idx}, this.value)">
@@ -1558,21 +1614,12 @@ async function loadScannerDashboard() {
 // Interactive AI Pipeline Demo Functions
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SAMPLE_RUBRIC = {
-    "question": "Explain the process of photosynthesis and its importance for life on Earth.",
-    "max_marks": 10,
-    "reference_answer": "Photosynthesis is the biological process by which green plants convert light energy into chemical energy stored in glucose. It involves light-dependent reactions and the Calvin cycle. Water is split releasing oxygen. Carbon dioxide is fixed into organic molecules. Photosynthesis produces oxygen, forms food chains, and regulates climate.",
-    "criteria": [
-        {"id": "c1", "description": "Explains that photosynthesis converts light energy into chemical energy", "marks": 2, "keywords": ["light energy", "chemical energy", "glucose", "sunlight"]},
-        {"id": "c2", "description": "Mentions chloroplasts or chlorophyll", "marks": 1, "keywords": ["chloroplast", "chlorophyll"]},
-        {"id": "c3", "description": "Describes light-dependent reactions and oxygen release", "marks": 2, "keywords": ["light-dependent", "water", "oxygen", "ATP"]},
-        {"id": "c4", "description": "Describes the Calvin cycle and carbon fixation", "marks": 2, "keywords": ["Calvin cycle", "carbon dioxide", "carbon fixation"]},
-        {"id": "c5", "description": "Explains ecological importance", "marks": 2, "keywords": ["oxygen", "food chain", "carbon cycle", "climate"]},
-        {"id": "c6", "description": "Uses appropriate scientific terminology", "marks": 1, "keywords": ["photosynthesis", "reaction", "energy"]}
-    ]
-};
-
 async function handleFileUpload(file) {
+    demoSelectionVersion++;
+    for (const id of ['eval-result', 'risk-section', 'review-section-inline', 'review-result']) {
+        const el = document.getElementById(id); if (el) el.style.display = 'none';
+    }
+
     const ext = file.name.split('.').pop().toLowerCase();
     const isTextFile = ext === 'txt';
     const isPdf = ext === 'pdf';
@@ -1584,6 +1631,10 @@ async function handleFileUpload(file) {
 
     try {
         const result = await apiPost('/api/upload', formData, false);
+        document.getElementById('script-text').value = '';
+        document.getElementById('script-text').dataset.session = '';
+        document.getElementById('script-text-reviewed').checked = false;
+        document.getElementById('script-text-review').style.display = 'none';
         currentSessionId = result.session_id;
 
         const previewImg = document.getElementById('preview-image');
@@ -1714,6 +1765,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5b. Question Paper Upload & Auto-Extraction
     let _extractedQuestions = [];
+    let extractedExamId = null;
+    let extractedFilename = '';
+    let extractionVersion = 0;
+    let importing = false;
+    window.addEventListener('evalisense-exam-change', () => {
+        extractionVersion++;
+        _extractedQuestions = [];
+        extractedExamId = null;
+        for (const id of ['qp-extraction-result', 'qp-extraction-status']) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        }
+    });
 
     document.getElementById('btn-tkr-upload-qp')?.addEventListener('click', () => {
         const sec = document.getElementById('qp-upload-section');
@@ -1734,10 +1798,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         qpFileInput.addEventListener('change', () => {
             if (qpFileInput.files.length) handleQPUpload(qpFileInput.files[0]);
+            qpFileInput.value = '';
         });
     }
 
     async function handleQPUpload(file) {
+        if (importing) return;
+        if (!activeExamId) return alert('Select an examination before uploading.');
+        const examId = activeExamId;
+        const version = ++extractionVersion;
+        _extractedQuestions = [];
+        extractedExamId = null;
         const statusEl = document.getElementById('qp-extraction-status');
         const statusText = document.getElementById('qp-extraction-status-text');
         const resultEl = document.getElementById('qp-extraction-result');
@@ -1751,7 +1822,12 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('file', file);
             const data = await apiPost('/api/extract-questions', formData, false);
 
+            if (version !== extractionVersion || examId !== activeExamId) return;
             _extractedQuestions = data.questions || [];
+            extractedExamId = examId;
+            extractedFilename = file.name;
+            document.getElementById('qp-import-mode').value = 'replace';
+            document.getElementById('qp-review-confirmed').checked = false;
 
             if (statusEl) statusEl.style.display = 'none';
 
@@ -1763,26 +1839,33 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show extraction result
             const summaryEl = document.getElementById('qp-extraction-summary');
             if (summaryEl) {
-                summaryEl.textContent = `${data.total_questions} questions found • Total: ${data.total_marks} marks • From: ${escapeHtml(file.name)}`;
+                summaryEl.textContent = `${data.total_questions} questions found • Detected marks: ${data.total_marks} • ${data.needs_review || 0} need review • From: ${file.name}`;
             }
 
             const previewEl = document.getElementById('qp-extracted-questions-preview');
             if (previewEl) {
                 previewEl.innerHTML = _extractedQuestions.map((q, i) => `
-                    <div style="padding: 0.65rem; margin-bottom: 0.5rem; background: white; border: 1px solid #e5e7eb; border-radius: var(--radius-sm);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                            <strong style="color: var(--color-primary-600);">Q${q.question_number}</strong>
-                            <span style="background: #eef2ff; color: #4338ca; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">${q.max_marks} marks</span>
-                        </div>
-                        <p style="margin: 0; font-size: 0.88rem; color: var(--color-text);">${escapeHtml(q.question_text.substring(0, 200))}${q.question_text.length > 200 ? '...' : ''}</p>
-                        ${q.criteria.length ? `<small style="color: var(--color-text-secondary);">${q.criteria.length} sub-criteria detected</small>` : ''}
-                    </div>
-                `).join('');
+                    <div class="qp-review-row" data-index="${i}" style="padding: 0.75rem; margin: 0.5rem 0; background: white; border: 1px solid #cbd5e1;">
+                        <label>Q number <input data-field="number" type="number" min="1" step="1" value="${q.question_number}" style="width: 5rem;"></label>
+                        <label>Type <select data-field="type">
+                            <option value="UNKNOWN" ${!['MCQ', 'WRITTEN'].includes(q.question_type) ? 'selected' : ''}>Review type</option>
+                            <option value="MCQ" ${q.question_type === 'MCQ' ? 'selected' : ''}>MCQ</option>
+                            <option value="WRITTEN" ${q.question_type === 'WRITTEN' ? 'selected' : ''}>Written answer</option>
+                        </select></label>
+                        <label>Allotted marks <input data-field="marks" type="number" min="0.01" step="any" value="${q.max_marks > 0 ? q.max_marks : ''}" style="width: 6rem;"></label>
+                        <p style="white-space: pre-wrap;">${escapeHtml(q.question_text)}</p>
+                        <label>Choices (MCQ only; one per line as A|choice text)
+                            <textarea data-field="options" rows="3" style="width:100%;">${escapeHtml((q.options?.length ? q.options : q.candidate_options || []).map(o => `${o.label}|${o.text}`).join('\n'))}</textarea>
+                        </label>
+                        <small>Marks evidence: ${escapeHtml(q.marks_source || 'Not found')}. Type evidence: ${escapeHtml(q.type_source || 'Not found')}.</small>
+                        <div style="color: #92400e;">${(q.warnings || []).map(w => escapeHtml(w)).join('<br>')}</div>
+                    </div>`).join('');
             }
 
             if (resultEl) resultEl.style.display = 'block';
 
         } catch (err) {
+            if (version !== extractionVersion) return;
             if (statusEl) statusEl.style.display = 'none';
             alert(`Question extraction failed: ${err.message}`);
         }
@@ -1798,38 +1881,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        showLoading(`Importing ${_extractedQuestions.length} questions into exam rubric...`);
+        if (importing || extractedExamId !== activeExamId) return alert('Upload the paper again for the selected exam.');
+        const examId = extractedExamId;
+        if (!document.getElementById('qp-review-confirmed').checked) return alert('Review the question types, choices, and allotted marks, then tick the confirmation box.');
+        const questions = _extractedQuestions.map((q, i) => {
+            const row = document.querySelector(`.qp-review-row[data-index="${i}"]`);
+            const question_type = row.querySelector('[data-field="type"]').value;
+            const options = question_type === 'MCQ' ? parseChoiceLines(row.querySelector('[data-field="options"]').value) : [];
+            return {...q, source_question_number: q.source_question_number || q.question_number, question_number: Number(row.querySelector('[data-field="number"]').value),
+                max_marks: Number(row.querySelector('[data-field="marks"]').value), question_type, options,
+                criteria: question_type === 'MCQ' ? [] : q.criteria || [],
+                marks_need_review: false, type_needs_review: false, reviewed_by_teacher: true};
+        });
+        if (questions.some(q => !['MCQ', 'WRITTEN'].includes(q.question_type) || !(q.max_marks > 0) ||
+            (q.question_type === 'MCQ' && !validChoices(q.options)))) return alert('Every question needs a type and positive marks. MCQs need at least two distinct, labelled choices.');
+        const mode = document.getElementById('qp-import-mode').value;
+        if (mode === 'replace' && !confirm('Show only this paper and remove all previous questions for this exam? Previous answers and rubric edits will be removed.')) return;
+        if (mode === 'merge' && !confirm('Merge intentionally keeps previous imported questions and rubric edits. Continue?')) return;
+        importing = true;
+        showLoading('Saving question paper...');
         try {
-            for (const q of _extractedQuestions) {
-                const qId = `q_${activeExamId}_${q.question_number}`;
-                const rubricData = {
-                    question: q.question_text,
-                    max_marks: q.max_marks,
-                    reference_answer: q.reference_answer || '',
-                    criteria: q.criteria || []
-                };
-
-                await window.EvaliSenseDB.fsSetDoc('questions', qId, {
-                    exam_id: activeExamId,
-                    question_number: q.question_number,
-                    question_text: q.question_text,
-                    max_marks: q.max_marks,
-                    reference_answer: q.reference_answer || '',
-                    criteria: q.criteria || [],
-                    rubric_json: JSON.stringify(rubricData)
-                }, true);
-            }
-
-            // Hide upload section and refresh
-            const sec = document.getElementById('qp-upload-section');
-            if (sec) sec.style.display = 'none';
-            _extractedQuestions = [];
-
-            alert(`✓ Successfully imported ${_extractedQuestions.length || 'all'} questions with marking rubrics!`);
-            refreshActiveExamData();
+            const result = await window.EvaliSenseDB.importExamQuestions(examId, questions, mode, extractedFilename);
+            if (activeExamId === examId) await refreshActiveExamData();
+            alert(`Saved ${result.added} questions. Matched ${result.matched} reference answers; ${result.unresolved} need a key or review. ${mode === 'replace' ? 'Previous exam questions were replaced.' : `Kept ${result.kept} existing questions (Merge).`}${result.local ? ' Saved in this browser (cloud unavailable).' : ''}`);
         } catch (err) {
             alert(`Import failed: ${err.message}`);
         } finally {
+            importing = false;
             hideLoading();
         }
     });
@@ -1843,6 +1921,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxMarks = parseFloat(document.getElementById('eq-max-marks').value);
         const qtext = document.getElementById('eq-qtext').value.trim();
         const refAnswer = document.getElementById('eq-ref-answer').value.trim();
+        const questionType = document.getElementById('eq-question-type').value;
+        const options = questionType === 'MCQ' ? parseChoiceLines(document.getElementById('eq-options').value) : [];
+        if (questionType === 'MCQ' && !validChoices(options)) return alert('MCQs need at least two distinct labelled choices. Use A|choice text on each line.');
         const errorBox = document.getElementById('eq-validation-error');
 
         // Validation: Criteria Marks Sum <= Question Max Marks
@@ -1867,6 +1948,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const editingExam = document.getElementById('eq-exam-id').value;
+        if (!editingExam || editingExam !== activeExamId) return alert('The selected exam changed. Reopen the question editor.');
         showLoading('Saving question and structured rubric to Firestore...');
         try {
             const rubricData = {
@@ -1876,16 +1959,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 criteria: editingCriteria
             };
 
-            const docData = {
-                exam_id: activeExamId,
+            const manualReference = !currentEditingQuestion || currentEditingQuestion.reference_source !== 'answer_key' || refAnswer !== currentEditingQuestion.reference_answer;
+            let docData = {
+                ...(currentEditingQuestion || {}),
+                exam_id: editingExam,
+                ...(currentEditingQuestion && paperQuestionsOnly([currentEditingQuestion], editingExam).length ? {source: 'question_paper'} : {}),
+                question_type: questionType, options,
+                marks_need_review: false, type_needs_review: false,
                 question_number: qnum,
                 question_text: qtext,
                 max_marks: maxMarks,
                 reference_answer: refAnswer,
+                reference_source: manualReference ? 'manual' : 'answer_key',
+                reference_key_id: manualReference ? '' : currentEditingQuestion.reference_key_id,
+                reference_key_version: manualReference ? null : currentEditingQuestion.reference_key_version,
+                reference_match_status: manualReference ? 'manual' : currentEditingQuestion.reference_match_status,
                 criteria: editingCriteria,
                 rubric_json: JSON.stringify(rubricData)
             };
 
+            if (!manualReference) {
+                const keys = await window.EvaliSenseDB.fsGetWhere('answer_keys', 'exam_id', '==', editingExam);
+                docData = window.EvaliSenseDB.attachAnswerKeyReference(docData, window.EvaliSenseDB.activeStoredAnswerKey(keys, editingExam));
+            }
+            if (editingExam !== activeExamId) throw new Error('The selected exam changed. Reopen the question editor.');
             if (qid) {
                 await window.EvaliSenseDB.fsUpdateDoc('questions', qid, docData);
             } else {
@@ -1915,89 +2012,94 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCriteriaRows();
     });
 
-    // 7. Replace / Upload Answer Key Modal Handling
+    // 7. Store the original key and review its numbered answers before linking.
     const akUploadArea = document.getElementById('ak-modal-upload-area');
     const akFileInput = document.getElementById('ak-modal-file-input');
     let selectedAkFile = null;
-
+    let parsedAk = null;
+    let keyRequestVersion = 0;
+    let keyBusy = false;
+    function resetKeyPreview() {
+        parsedAk = null;
+        keyRequestVersion++;
+        document.getElementById('ak-parsed-preview').style.display = 'none';
+        document.getElementById('ak-review-confirmed').checked = false;
+        document.getElementById('btn-submit-ak-modal').textContent = 'Read & Preview Answers';
+    }
+    window.addEventListener('evalisense-key-modal-open', () => {
+        resetKeyPreview(); selectedAkFile = null;
+        document.getElementById('ak-modal-file-preview').style.display = 'none';
+        document.getElementById('ak-modal-notes').value = '';
+        if (akFileInput) akFileInput.value = '';
+    });
+    function selectAnswerKeyFile(file) {
+        if (keyBusy) return;
+        selectedAkFile = file;
+        resetKeyPreview();
+        document.getElementById('ak-modal-filename-display').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        document.getElementById('ak-modal-file-preview').style.display = 'block';
+    }
     if (akUploadArea && akFileInput) {
         akUploadArea.addEventListener('click', () => akFileInput.click());
+        akUploadArea.addEventListener('dragover', event => event.preventDefault());
+        akUploadArea.addEventListener('drop', event => {
+            event.preventDefault();
+            if (event.dataTransfer.files.length) selectAnswerKeyFile(event.dataTransfer.files[0]);
+        });
         akFileInput.addEventListener('change', () => {
-            if (akFileInput.files.length) {
-                selectedAkFile = akFileInput.files[0];
-                const preview = document.getElementById('ak-modal-file-preview');
-                const display = document.getElementById('ak-modal-filename-display');
-                if (display) display.textContent = `${selectedAkFile.name} (${(selectedAkFile.size / 1024).toFixed(1)} KB)`;
-                if (preview) preview.style.display = 'block';
-            }
+            if (akFileInput.files.length) selectAnswerKeyFile(akFileInput.files[0]);
+            akFileInput.value = '';
         });
     }
-
-    document.getElementById('form-upload-ak-modal')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!selectedAkFile) {
-            alert('Please select an official answer key file to upload.');
-            return;
-        }
-
-        showLoading('Uploading new answer key version to Firestore...');
+    document.getElementById('form-upload-ak-modal')?.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (keyBusy) return;
+        const examId = document.getElementById('ak-modal-exam-id').value;
+        if (!examId || examId !== activeExamId) return alert('The examination changed. Reopen Upload Answer Key for the selected exam.');
+        if (!selectedAkFile) return alert('Select a PDF or TXT answer key.');
+        const button = document.getElementById('btn-submit-ak-modal');
+        keyBusy = true; button.disabled = true;
         try {
-            // Get current highest version
-            const existingKeys = await window.EvaliSenseDB.fsGetWhere('answer_keys', 'exam_id', '==', activeExamId);
-            let nextVer = 1;
-            existingKeys.forEach(k => {
-                if ((k.version || 1) >= nextVer) nextVer = (k.version || 1) + 1;
-            });
-
-            // Mark previous keys as SUPERSEDED and inactive
-            for (const k of existingKeys) {
-                if (k.is_active) {
-                    await window.EvaliSenseDB.fsUpdateDoc('answer_keys', k.id, {
-                        is_active: false,
-                        status: 'SUPERSEDED'
-                    });
-                }
+            if (!parsedAk) {
+                showLoading('Reading and storing the original answer key...');
+                const requestVersion = ++keyRequestVersion;
+                const data = new FormData(); data.append('file', selectedAkFile); data.append('exam_id', examId);
+                const result = await apiPost('/api/answer-key-files', data, false);
+                if (requestVersion !== keyRequestVersion || examId !== activeExamId) throw new Error('The selected exam changed. Reopen the upload for the intended exam.');
+                parsedAk = result;
+                const rows = document.getElementById('ak-answer-rows');
+                rows.innerHTML = result.answers.map((answer, index) => `
+                    <div class="ak-answer-row" data-index="${index}" style="padding: 0.75rem; border: 1px solid #cbd5e1; margin: 0.5rem 0;">
+                        <label>Section <input data-field="section" value="${escapeHtml(answer.section || '')}" style="width: 5rem;"></label>
+                        <label>Q number <input type="number" min="1" step="1" data-field="number" value="${Number(answer.question_number)}" style="width: 5rem;"></label>
+                        <label>Correct MCQ option (if applicable) <input data-field="option" maxlength="1" value="${escapeHtml(answer.correct_option || '')}" style="width: 3rem;"></label>
+                        <label style="display:block;">Model answer / explanation<textarea data-field="answer" rows="3" style="width:100%;">${escapeHtml(answer.answer_text || '')}</textarea></label>
+                    </div>`).join('');
+                document.getElementById('ak-parse-summary').textContent = `${result.answers.length} numbered answers found. ${(result.parse_warnings || []).join(' ')}`;
+                document.getElementById('ak-parsed-preview').style.display = 'block';
+                button.textContent = 'Save Answer Key & Link References';
+                return;
             }
-
-            const notes = document.getElementById('ak-modal-notes').value.trim();
-
-            // Create new version
-            await window.EvaliSenseDB.fsAddDoc('answer_keys', {
-                exam_id: activeExamId,
-                version: nextVer,
-                original_filename: selectedAkFile.name,
-                filename: selectedAkFile.name,
-                uploaded_by: currentUser ? currentUser.username : 'teacher1',
-                uploader_name: currentUser ? currentUser.full_name : 'Dr. Marcus Thorne',
-                file_size: selectedAkFile.size,
-                mime_type: selectedAkFile.type || 'application/pdf',
-                status: 'UPLOADED',
-                is_approved: false,
-                is_active: true,
-                uploaded_at: new Date().toISOString(),
-                notes: notes || 'New version replacement uploaded by teacher',
-                extracted_text: `EXTRACTED CONTENT FOR: ${selectedAkFile.name}\nUploaded by: ${currentUser ? currentUser.full_name : 'Teacher'}\nVersion: ${nextVer}\n[Awaiting teacher inspection and verification]`
-            });
-
-            // Audit Log
-            await window.EvaliSenseDB.fsAddDoc('audit_logs', {
-                user_name: currentUser ? currentUser.full_name : 'Dr. Marcus Thorne',
-                user_role: 'TEACHER',
-                action: 'UPLOAD_ANSWER_KEY',
-                entity_type: 'answer_key',
-                entity_id: `v${nextVer}`,
-                details: `Uploaded Version ${nextVer} (${selectedAkFile.name}) for Exam #${activeExamId}`,
-                timestamp: new Date().toISOString()
-            });
-
+            if (!document.getElementById('ak-review-confirmed').checked) return alert('Check the numbered answers and tick the review checkbox before saving.');
+            const answers = Array.from(document.querySelectorAll('.ak-answer-row')).map(row => ({
+                answer_type: parsedAk.answers[Number(row.dataset.index)]?.answer_type || '',
+                section: row.querySelector('[data-field="section"]').value,
+                question_number: Number(row.querySelector('[data-field="number"]').value),
+                correct_option: row.querySelector('[data-field="option"]').value,
+                answer_text: row.querySelector('[data-field="answer"]').value
+            }));
+            showLoading('Saving answer key and linking reference answers...');
+            const result = await window.EvaliSenseDB.saveExamAnswerKey(examId, {...parsedAk, answers,
+                uploaded_by: currentUser?.username || 'teacher1', uploader_name: currentUser?.full_name || 'Teacher',
+                notes: document.getElementById('ak-modal-notes').value.trim()});
             closeModal('modal-upload-ak');
-            selectedAkFile = null;
-            alert(`✓ Answer Key Version ${nextVer} uploaded successfully! Review questions and approve when ready.`);
-            refreshActiveExamData();
-        } catch (err) {
-            alert(`Upload failed: ${err.message}`);
+            selectedAkFile = null; parsedAk = null;
+            if (activeExamId === examId) await refreshActiveExamData();
+            alert(`Answer key v${result.key.version} saved. ${result.matched} reference answers filled; ${result.unresolved} need review; ${result.preserved} teacher-edited answers kept. You can import the question paper later.${result.local ? ' Key mapping is saved in this browser; original file is stored on this server.' : ''}`);
+        } catch (error) {
+            alert(`Answer key upload failed: ${error.message}`);
         } finally {
-            hideLoading();
+            keyBusy = false; button.disabled = false; hideLoading();
         }
     });
 
@@ -2059,6 +2161,10 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('file', scannerSelectedFile);
 
             const result = await apiPost('/api/upload', formData, false);
+        document.getElementById('script-text').value = '';
+        document.getElementById('script-text').dataset.session = '';
+        document.getElementById('script-text-reviewed').checked = false;
+        document.getElementById('script-text-review').style.display = 'none';
 
             // Save script record to Firestore/local
             const scriptId = 'script_' + Date.now().toString(36);
@@ -2135,6 +2241,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formData = new FormData();
                     formData.append('file', file);
                     const result = await apiPost('/api/upload', formData, false);
+        document.getElementById('script-text').value = '';
+        document.getElementById('script-text').dataset.session = '';
+        document.getElementById('script-text-reviewed').checked = false;
+        document.getElementById('script-text-review').style.display = 'none';
                     if (result.session_id) {
                         // Run preprocessing + HTR
                         await apiPost(`/api/preprocess/${result.session_id}`);
@@ -2206,68 +2316,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    let demoHtrBusy = false;
     document.getElementById('btn-recognize')?.addEventListener('click', async () => {
-        if (!currentSessionId) return;
-        showLoading('Running Microsoft TrOCR Handwritten Recognition (CPU)...');
+        if (!currentSessionId || demoHtrBusy) return;
+        const sessionId = currentSessionId;
+        const button = document.getElementById('btn-recognize');
+        const progressEl = document.getElementById('htr-progress');
+        demoHtrBusy = true; button.disabled = true;
+        let finished = false, pollBusy = false;
+        showLoading('Preparing text recognition…');
+        if (progressEl) progressEl.textContent = 'Starting recognition…';
+        async function updateProgress() {
+            if (finished || pollBusy || currentSessionId !== sessionId) return;
+            pollBusy = true;
+            try {
+                const progress = await apiGet(`/api/recognize/${sessionId}/progress`);
+                if (!finished && currentSessionId === sessionId) {
+                    const message = htrProgressText(progress);
+                    if (progressEl) progressEl.textContent = message;
+                    const loadingText = document.getElementById('loading-text');
+                    if (loadingText) loadingText.textContent = message;
+                }
+            } catch (_) {
+                // The recognition request remains authoritative if a progress poll fails.
+            } finally { pollBusy = false; }
+        }
+        const timer = setInterval(updateProgress, 1000);
         try {
-            const data = await apiPost(`/api/recognize/${currentSessionId}`);
+            const data = await apiPost(`/api/recognize/${sessionId}`);
+            if (currentSessionId !== sessionId) return;
             const box = document.getElementById('htr-result');
+            const metadata = data.metadata || {};
+            renderOCRReview(data,sessionId);
+            const method = metadata.method === 'direct_text' ? 'Direct text extraction' : 'Local handwriting recognition';
+            if (progressEl) progressEl.textContent = data.cached ? 'Reused the completed recognition result.' : `Completed in ${Number(metadata.elapsed_seconds || 0).toFixed(1)} seconds.`;
             if (box) {
                 box.style.display = 'block';
                 box.innerHTML = `
-                    <p><strong>Recognised Handwritten Text (${data.lines ? data.lines.length : 0} lines, Conf: ${data.average_confidence ? (data.average_confidence * 100).toFixed(1) + '%' : 'N/A'}):</strong></p>
-                    <pre style="background: var(--color-surface-2); padding: 0.75rem; margin-top: 0.5rem; border-radius: var(--radius-sm); font-family: monospace;">${escapeHtml(data.text)}</pre>
-                `;
+                    <p><strong>${method}: ${data.lines ? data.lines.length : 0} lines</strong></p>
+                    <p>Source: ${escapeHtml(metadata.source_filename || 'Uploaded file')} · SHA-256: ${escapeHtml(metadata.source_sha256 || 'Unavailable')}</p>
+                    <p>Candidates marked “Unclear” need confirmation against the image. They are not final transcriptions and cannot receive marks until reviewed.</p>
+                    <p>Optical support (not an accuracy guarantee): ${data.average_confidence != null ? (data.average_confidence * 100).toFixed(1) + '%' : 'Not available'}${metadata.device ? ` · Device: ${escapeHtml(metadata.device)}` : ''}</p>
+                    <pre style="background: var(--color-surface-2); padding: 0.75rem; margin-top: 0.5rem; border-radius: var(--radius-sm); font-family: monospace; white-space: pre-wrap;">${escapeHtml(data.text)}</pre>`;
             }
-            const sec = document.getElementById('evaluate-section');
-            if (sec) {
-                sec.style.display = 'block';
-                sec.scrollIntoView({ behavior: 'smooth' });
-            }
-        } catch (err) {
-            alert(`HTR failed: ${err.message}`);
+            const section = document.getElementById('evaluate-section');
+            if (section) { section.style.display = 'block'; section.scrollIntoView({behavior: 'smooth'}); }
+        } catch (error) {
+            if (progressEl) progressEl.textContent = `Recognition failed: ${error.message}`;
+            alert(`HTR failed: ${error.message}`);
         } finally {
-            hideLoading();
+            finished = true; clearInterval(timer);
+            demoHtrBusy = false; button.disabled = false; hideLoading();
         }
     });
 
-    document.getElementById('btn-load-sample-rubric')?.addEventListener('click', () => {
-        const area = document.getElementById('rubric-textarea');
-        if (area) area.value = JSON.stringify(SAMPLE_RUBRIC, null, 2);
-    });
-
-    document.getElementById('btn-evaluate')?.addEventListener('click', async () => {
-        if (!currentSessionId) return;
-        const area = document.getElementById('rubric-textarea');
-        const rubricJson = area ? area.value.trim() : '';
-        if (!rubricJson) {
-            alert('Please paste or load a rubric JSON.');
-            return;
-        }
-
-        showLoading('Evaluating handwritten answer against rubric using Sentence-BERT...');
-        const formData = new FormData();
-        formData.append('rubric_json', rubricJson);
-
-        try {
-            const data = await apiPost(`/api/evaluate/${currentSessionId}`, formData, false);
-            const res = data.result;
-            const box = document.getElementById('eval-result');
-            if (box) {
-                box.style.display = 'block';
-                box.innerHTML = `
-                    <p><strong>AI Preliminary Score:</strong> <span style="font-size: 1.25rem; font-weight: 700; color: var(--color-primary-600);">${res.total_score} / ${res.max_score}</span></p>
-                    <p>Overall Semantic Similarity: ${(res.overall_similarity * 100).toFixed(1)}%</p>
-                `;
-            }
-            const sec = document.getElementById('risk-section');
-            if (sec) sec.style.display = 'block';
-        } catch (err) {
-            alert('Evaluation failed: ' + err.message);
-        } finally {
-            hideLoading();
-        }
-    });
+    document.getElementById('btn-evaluate')?.addEventListener('click', evaluateWholeScript);
 
     document.getElementById('btn-predict-risk')?.addEventListener('click', async () => {
         if (!currentSessionId) return;
@@ -2301,3 +2404,108 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// One exam per script; matching and scoring run on the complete numbered text.
+let demoQuestions = [], demoSelectionVersion = 0, demoScriptBusy = false;
+function clearScriptScores() {
+    demoSelectionVersion++;
+    for(const id of ['eval-result','risk-section','review-section-inline','review-result']) {
+        const el=document.getElementById(id); if(el) el.style.display='none';
+    }
+    const button=document.getElementById('btn-evaluate'); if(button) button.disabled=!demoQuestions.length;
+}
+async function loadDemoContext() {
+    const subject=document.getElementById('demo-subject'), exam=document.getElementById('demo-exam');
+    const status=document.getElementById('demo-context-status');
+    demoQuestions=[]; clearScriptScores();
+    const version=demoSelectionVersion;
+    subject.disabled=true; exam.disabled=true;
+    status.textContent='Loading subjects and examinations…';
+    const fill=(el,rows,prompt,label)=>{el.replaceChildren(new Option(prompt,'')); for(const r of rows)el.add(new Option(label(r),r.id));};
+    try {
+        const [subjects,exams]=await Promise.all([window.EvaliSenseDB.fsGetAll('subjects'),window.EvaliSenseDB.fsGetAll('exams')]);
+        if(version!==demoSelectionVersion)return;
+        fill(subject,subjects,'Select subject…',s=>`${s.code || ''} — ${s.name || ''}`); subject.disabled=false;
+        fill(exam,[],'Select subject first…',()=> '');
+        status.textContent='Select the subject and exam once for the whole answer script.';
+        subject.onchange=()=>{
+            demoQuestions=[];clearScriptScores();
+            fill(exam,exams.filter(e=>e.subject_id===subject.value),'Select examination…',e=>e.name||e.exam_name||e.id);
+            exam.disabled=!subject.value; status.textContent='Select the exam for this script.';
+        };
+        exam.onchange=async()=>{
+            demoQuestions=[];clearScriptScores();
+            const request=demoSelectionVersion,examId=exam.value;
+            if(!examId){status.textContent='Select an examination.';return;}
+            status.textContent='Loading all imported questions and saved answers…';
+            try {
+                const rows=paperQuestionsOnly(await window.EvaliSenseDB.fsGetWhere('questions','exam_id','==',examId),examId);
+                if(request!==demoSelectionVersion)return;
+                demoQuestions=rows.sort((a,b)=>Number(a.question_number)-Number(b.question_number));
+                document.getElementById('btn-evaluate').disabled=!rows.length;
+                status.textContent=rows.length?`${rows.length} questions loaded. Upload the whole student answer script once. Answers will be matched by number.`:'No imported questions. Upload the question paper and answer key in Answer Keys & Rubrics first.';
+            }catch(error){if(request===demoSelectionVersion)status.textContent=`Could not load questions: ${error.message}`;}
+        };
+    }catch(error){status.textContent=`Could not load exams: ${error.message}`;subject.disabled=false;}
+}
+async function evaluateWholeScript() {
+    if(demoScriptBusy)return;
+    if(!currentSessionId||!demoQuestions.length){alert('Select the subject and examination, then upload the student answer script.');return;}
+    demoScriptBusy=true;
+    const button=document.getElementById('btn-evaluate'), session=currentSessionId,version=demoSelectionVersion;
+    button.disabled=true;
+    const box=document.getElementById('eval-result');
+    box.style.display='block';box.textContent='Recognizing the script and matching all numbered answers…';
+    try {
+        const recognized=await apiPost(`/api/recognize/${session}`);
+        if(version!==demoSelectionVersion||session!==currentSessionId)return;
+        const area=document.getElementById('script-text');
+        // Preserve teacher corrections on retries for the same recognized session.
+        if(area.dataset.session!==session){area.value=recognized.text;area.dataset.session=session;document.getElementById('script-text-reviewed').checked=false;}
+        document.getElementById('script-text-review').style.display='block';
+        renderOCRReview(recognized,session);
+        if(recognized.metadata?.method!=='direct_text'&&!document.getElementById('script-text-reviewed').checked){
+            box.textContent='Handwriting recognition is complete. Review the extracted text below once for the whole script, correct unreadable lines or answer numbers, then confirm and click Evaluate Whole Script. No marks have been assigned.';
+            return;
+        }
+        box.textContent='Evaluating all matched answers…';
+        const data=await apiPost(`/api/evaluate-script/${session}`,{questions:demoQuestions,text:area.value,text_reviewed:document.getElementById('script-text-reviewed').checked});
+        if(version!==demoSelectionVersion||session!==currentSessionId)return;
+        box.innerHTML=`<h3>Whole-script results</h3><p>${data.scored_count} scored · ${data.review_count} need review · Scored subtotal: ${Number(data.scored_subtotal)}</p><p>${escapeHtml(data.note)}</p>`+
+            data.results.map(r=>`<details style="margin:0.7rem 0"><summary>Q${escapeHtml(String(r.question_number))}: ${r.score==null?'Needs review':`${Number(r.score)} / ${Number(r.max_marks)}`}</summary><p>${escapeHtml(r.reason)}</p><pre style="white-space:pre-wrap">${escapeHtml(r.answer)}</pre></details>`).join('')+
+            (data.unmatched_blocks.length?`<details><summary>${data.unmatched_blocks.length} unmatched answer blocks</summary><pre style="white-space:pre-wrap">${escapeHtml(data.unmatched_blocks.map(b=>`Q${b.number}: ${b.text}`).join('\n\n'))}</pre></details>`:'');
+    }catch(error){box.textContent=`Script evaluation failed: ${error.message}`;}
+    finally{demoScriptBusy=false;button.disabled=!demoQuestions.length;}
+}
+
+// Image evidence for uncertain lines. Corrections are teacher input, never inferred
+// from the official answer key or from a preferred MCQ option.
+function renderOCRReview(data,sessionId) {
+    let container=document.getElementById('ocr-line-review');
+    if(!container){container=document.createElement('div');container.id='ocr-line-review';document.getElementById('script-text-review').appendChild(container);}
+    const pages=data.metadata?.pages||[];
+    const scriptArea=document.getElementById('script-text');
+    const warnings=pages.flatMap(p=>(p.quality_warnings||[]).map(w=>({...w,page:p.page_number,alternatives:(p.regions||[]).find(r=>r.line_number===w.line_number)?.alternatives||{}})))
+        .filter(w=>scriptArea.dataset.session!==sessionId||scriptArea.value.includes(w.marker));
+    const faint=pages.filter(p=>p.foreground?.has_foreground===false);
+    container.innerHTML=pages.filter(p=>p.method!=='text').map(p=>`<details style="margin:.75rem 0"><summary>Compare original page ${Number(p.page_number)} with the extracted text</summary><p>Check spelling, numbers, symbols and crossed-out words. Even an unflagged reading can be wrong.</p><img loading="lazy" src="/api/recognize/${encodeURIComponent(sessionId)}/page/${Number(p.page_number)}/image" alt="Original uploaded page ${Number(p.page_number)}" style="max-width:100%;background:white"></details>`).join('')+`<p>${warnings.length} uncertain lines need checking.${faint.length?` ${faint.length} page(s) have no strong foreground writing; they were deferred rather than read as answers.`:''}</p>`+
+        warnings.map((w,i)=>`<details style="margin:1rem 0;border:1px solid var(--color-border);padding:.75rem"><summary>Page ${Number(w.page)}, line ${Number(w.line_number)} — check image</summary><p>${escapeHtml(w.reason)}</p>
+        <img loading="lazy" src="/api/recognize/${encodeURIComponent(sessionId)}/page/${Number(w.page)}/line/${Number(w.line_number)}" alt="Original handwriting on page ${Number(w.page)}, line ${Number(w.line_number)}" style="max-width:100%;max-height:230px;object-fit:contain;background:white">
+        ${Object.keys(w.alternatives||{}).length?`<details><summary>Compare local reader suggestions</summary>${Object.entries(w.alternatives).filter(([k,v])=>typeof v==='string').map(([k,v])=>`<p><strong>${escapeHtml(({handwriting:'Handwriting reading',optical_line:'Second reading',optical_chunks:'Short-section reading',whole_line:'Initial reading'})[k]||k.replaceAll('_',' '))}:</strong> ${escapeHtml(v)}</p>`).join('')}</details>`:''}
+        <label>OCR candidate — confirm or correct it using the image<textarea rows="2" id="ocr-fix-${i}" style="width:100%">${escapeHtml(w.raw_text||'')}</textarea></label>
+        <label><input type="checkbox" id="ocr-discard-${i}"> This crop is a border, footer or other non-answer material; remove it.</label>
+        <button type="button" class="btn btn-secondary" data-ocr-fix="${i}">Confirm this line</button><p id="ocr-status-${i}" role="status"></p></details>`).join('');
+    container.querySelectorAll('[data-ocr-fix]').forEach(button=>button.addEventListener('click',()=>{
+        if(currentSessionId!==sessionId)return;
+        const i=Number(button.dataset.ocrFix),w=warnings[i],area=document.getElementById('script-text');
+        if(area.dataset.session!==sessionId){area.value=data.text;area.dataset.session=sessionId;}
+        const value=document.getElementById(`ocr-discard-${i}`).checked?'':document.getElementById(`ocr-fix-${i}`).value.trim();
+        const status=document.getElementById(`ocr-status-${i}`);
+        if(!value&&!document.getElementById(`ocr-discard-${i}`).checked){status.textContent='Enter the visible text or mark this crop as non-answer material.';return;}
+        if(!area.value.includes(w.marker)){status.textContent='This marker was already edited in the extracted script. Check the text there.';return;}
+        area.value=area.value.replace(w.marker,value);
+        document.getElementById('script-text-reviewed').checked=false;
+        status.textContent='Correction applied to the extracted script.';
+        button.disabled=true;
+    }));
+}

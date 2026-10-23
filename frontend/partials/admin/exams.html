@@ -1,0 +1,51 @@
+<section class="page" id="page-hod-exams">
+    <header class="page-header">
+        <h1>Examinations, Questions & Rubrics</h1>
+        <p class="page-subtitle">Schedule exams, configure question papers, answer keys, and criteria rubrics</p>
+    </header>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Examinations</h2>
+            <button class="btn btn-primary" onclick="openModal('modal-add-exam')">+ Create Examination</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-exams">
+                <thead>
+                    <tr>
+                        <th>Exam Name</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Total Marks</th>
+                        <th>Questions</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Questions for Selected Exam -->
+    <div class="card" id="exam-questions-panel" style="margin-top: 1.5rem; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 id="exam-questions-title">Questions & Rubrics</h2>
+            <button class="btn btn-primary" id="btn-add-question-to-exam">+ Add Question</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-questions">
+                <thead>
+                    <tr>
+                        <th>Q #</th>
+                        <th>Question Text</th>
+                        <th>Max Marks</th>
+                        <th>Reference Answer</th>
+                        <th>Rubric</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</section>

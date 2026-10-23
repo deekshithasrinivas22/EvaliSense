@@ -1,0 +1,13 @@
+<div class="modal-backdrop" id="modal-add-role" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Create Custom Role</h2>
+            <button class="modal-close" onclick="closeModal('modal-add-role')">&times;</button>
+        </div>
+        <form id="form-add-role">
+            <div class="form-group"><label>Role Name</label><input type="text" id="role-name" required placeholder="e.g. EXAM_CONTROLLER"></div>
+            <div class="form-group"><label>Description</label><textarea id="role-desc" rows="2" placeholder="Responsibilities of this role"></textarea></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Role</button>
+        </form>
+    </div>
+</div>

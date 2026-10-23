@@ -1,0 +1,30 @@
+<section class="page" id="page-scripts-monitoring">
+    <header class="page-header">
+        <h1>Answer Scripts & Evaluation Pipeline</h1>
+        <p class="page-subtitle">Monitor scan intake, OCR recognition status, trigger AI grading, and review flags</p>
+    </header>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Uploaded Answer Scripts</h2>
+            <button class="btn btn-secondary" onclick="loadScriptsMonitoring()">🔄 Refresh</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-all-scripts">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Exam</th>
+                        <th>Student USN</th>
+                        <th>File Name</th>
+                        <th>Scan Quality</th>
+                        <th>Status</th>
+                        <th>Uploaded By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="8">Loading answer scripts...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

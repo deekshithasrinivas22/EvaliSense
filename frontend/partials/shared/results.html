@@ -1,0 +1,35 @@
+<section class="page" id="page-results">
+    <header class="page-header">
+        <h1>Examination Results & Performance</h1>
+        <p class="page-subtitle">Authoritative grades, question breakdowns, class averages & student reports</p>
+    </header>
+
+    <div class="card">
+        <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+            <label for="results-exam-select">Select Examination:</label>
+            <select id="results-exam-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+        </div>
+
+        <div class="stats-grid" id="exam-stats-summary" style="margin-bottom: 1.5rem;">
+            <div class="stat-card"><div class="stat-value" id="r-stat-avg">0.0</div><div class="stat-label">Class Average</div></div>
+            <div class="stat-card"><div class="stat-value" id="r-stat-high">0.0</div><div class="stat-label">Highest Score</div></div>
+            <div class="stat-card"><div class="stat-value" id="r-stat-pass">0%</div><div class="stat-label">Pass Percentage</div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="table-exam-results">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Student Name</th>
+                        <th>USN</th>
+                        <th>Total Marks</th>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6">Select an examination to view results.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,94 @@
+<section class="page" id="page-hod-academics">
+    <header class="page-header">
+        <h1>Academic Structure</h1>
+        <p class="page-subtitle">Configure departments, sections, enrolled students, subjects & teacher assignments</p>
+    </header>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('tab-departments')">Departments</button>
+        <button class="tab-btn" onclick="switchTab('tab-sections')">Sections</button>
+        <button class="tab-btn" onclick="switchTab('tab-students')">Students</button>
+        <button class="tab-btn" onclick="switchTab('tab-subjects')">Subjects</button>
+        <button class="tab-btn" onclick="switchTab('tab-assignments')">Teacher Mappings</button>
+    </div>
+
+    <!-- Departments Tab -->
+    <div class="tab-content active" id="tab-departments">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Departments</h2>
+                <button class="btn btn-primary" onclick="openModal('modal-add-dept')">+ Add Department</button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table" id="table-departments">
+                    <thead><tr><th>Code</th><th>Name</th><th>Status</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sections Tab -->
+    <div class="tab-content" id="tab-sections">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Sections & Classes</h2>
+                <button class="btn btn-primary" onclick="openModal('modal-add-section')">+ Add Section</button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table" id="table-sections">
+                    <thead><tr><th>Section Name</th><th>Department</th><th>Semester</th><th>Academic Year</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Tab -->
+    <div class="tab-content" id="tab-students">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Students Roster</h2>
+                <button class="btn btn-primary" onclick="openModal('modal-add-student')">+ Add Student</button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table" id="table-students">
+                    <thead><tr><th>USN</th><th>Name</th><th>Section</th><th>Roll #</th><th>Email</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subjects Tab -->
+    <div class="tab-content" id="tab-subjects">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Subjects</h2>
+                <button class="btn btn-primary" onclick="openModal('modal-add-subject')">+ Add Subject</button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table" id="table-subjects">
+                    <thead><tr><th>Code</th><th>Subject Name</th><th>Semester</th><th>Max Marks</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Mappings Tab -->
+    <div class="tab-content" id="tab-assignments">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Teacher-Subject Mappings</h2>
+                <button class="btn btn-primary" onclick="openModal('modal-add-mapping')">+ Assign Teacher to Subject</button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table" id="table-teacher-subjects">
+                    <thead><tr><th>Teacher</th><th>Subject</th><th>Section</th><th>Academic Year</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

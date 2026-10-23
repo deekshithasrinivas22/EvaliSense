@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import argparse
+import time
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,8 @@ import cv2
 import numpy as np
 
 from .line_segmenter import HandwritingLineSegmenter
-from .recognizer import HandwritingRecognizer
+from .hybrid_recognizer import HybridHandwritingRecognizer as HandwritingRecognizer
+from .page_layout import prepare_handwriting_page
 from .result import HTRResult
 
 
@@ -18,19 +20,76 @@ class HTRPipeline:
         self.segmenter = segmenter or HandwritingLineSegmenter()
         self.recognizer = recognizer or HandwritingRecognizer()
 
-    def recognize_image(self, image: np.ndarray, debug_dir: str | Path | None = None) -> HTRResult:
-        regions = self.segmenter.segment(image)
+    def recognize_image(self, image: np.ndarray, debug_dir: str | Path | None = None, on_progress=None) -> HTRResult:
+        started = time.perf_counter()
+        def report(phase, completed=0, total=0):
+            if on_progress is not None:
+                on_progress({"phase": phase, "completed_lines": completed, "total_lines": total,
+                             "elapsed_seconds": round(time.perf_counter() - started, 2)})
+        report("segmenting")
+        prepared, foreground = prepare_handwriting_page(image)
+        if not foreground['has_foreground']:
+            report('completed')
+            return HTRResult('', [], None, {'model':getattr(self.recognizer,'display_name',getattr(self.recognizer,'model_name',None)),
+                'foreground':foreground,'quality_warnings':[], 'number_of_lines':0,
+                'regions':[], 'elapsed_seconds':round(time.perf_counter()-started,3)})
+        regions = self.segmenter.segment(prepared)
+        # Tight, tall crops squash handwriting when TrOCR resizes to a square.
+        # Preserve real strokes with white context around each line.
+        for region in regions:
+            pad = max(8, int(region.image.shape[0] * 0.35))
+            region.image = cv2.copyMakeBorder(region.image, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=255 if region.image.ndim == 2 else (255,255,255))
+        segmented_at = time.perf_counter()
         if debug_dir is not None:
             self._save_debug(image, regions, debug_dir)
-        lines = [self.recognizer.recognize(region.image, region.line_number, region.bounding_box) for region in regions]
+        lines = []
+        if regions:
+            report("loading_model", 0, len(regions))
+            load_model = getattr(self.recognizer, "_load_model", None)
+            if callable(load_model):
+                load_model()
+            report("recognizing", 0, len(regions))
+            batch_method = getattr(self.recognizer, "recognize_batch", None)
+            batch_size = getattr(self.recognizer, "batch_size", None) or 2
+            for start in range(0, len(regions), batch_size):
+                batch = regions[start:start + batch_size]
+                if callable(batch_method):
+                    recognized = batch_method([r.image for r in batch], [r.line_number for r in batch], [r.bounding_box for r in batch])
+                else:
+                    recognized = [self.recognizer.recognize(r.image, r.line_number, r.bounding_box) for r in batch]
+                lines.extend(recognized)
+                report("recognizing", len(lines), len(regions))
+        warnings = []
+        region_records = []
+        for line in lines:
+            region_records.append({'line_number':line.line_number,'text':line.text,
+                'confidence':line.confidence,'bounding_box':line.bounding_box,
+                'alternatives':getattr(line,'ocr_alternatives',{}), 'secondary_error':getattr(line,'secondary_error',None),
+                'review_reason':getattr(line,'review_reason',None), 'independent_agreement':getattr(line,'ocr_verified',False)})
+            words = line.text.lower().split()
+            grams = [tuple(words[i:i+3]) for i in range(max(0,len(words)-2))]
+            repetitive = any(grams.count(g) >= 3 for g in set(grams))
+            box = line.bounding_box
+            implausibly_long = bool(box and box[2] / max(1,box[3]) < 3 and len(line.text) > 25)
+            low_confidence = line.confidence is not None and line.confidence < .5 and not getattr(line,"ocr_verified",False)
+            disagreement = getattr(line,"review_reason",None)
+            if repetitive or implausibly_long or low_confidence or disagreement:
+                warnings.append({"line_number":line.line_number,"raw_text":line.text,"bounding_box":line.bounding_box,
+                    "reason":disagreement or "Unreliable OCR output; check the scan instead of using this text for marks."})
+                line.text = f"[Unclear line {line.line_number} — review scan]"
         confidences = [line.confidence for line in lines if line.confidence is not None]
-        return HTRResult("\n".join(line.text for line in lines), lines, sum(confidences) / len(confidences) if confidences else None, {"model": getattr(self.recognizer, "model_name", None), "number_of_lines": len(lines)})
+        metadata = {"model": getattr(self.recognizer,"display_name",getattr(self.recognizer,"model_name",None)), "number_of_lines": len(lines),
+                    "foreground":foreground,"regions":region_records,"quality_warnings": warnings, "segmentation_seconds": round(segmented_at - started, 3),
+                    "elapsed_seconds": round(time.perf_counter() - started, 3)}
+        report("completed", len(lines), len(regions))
+        return HTRResult("\n".join(line.text for line in lines), lines,
+                         sum(confidences) / len(confidences) if confidences else None, metadata)
 
-    def recognize_path(self, image_path: str | Path, debug_dir: str | Path | None = None) -> HTRResult:
+    def recognize_path(self, image_path: str | Path, debug_dir: str | Path | None = None, on_progress=None) -> HTRResult:
         image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
         if image is None:
             raise ValueError(f"Could not read image data from: {image_path}")
-        return self.recognize_image(image, debug_dir)
+        return self.recognize_image(image, debug_dir, on_progress)
 
     def _save_debug(self, image: np.ndarray, regions: list[Any], debug_dir: str | Path) -> None:
         output = Path(debug_dir)

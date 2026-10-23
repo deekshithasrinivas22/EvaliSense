@@ -1,0 +1,13 @@
+<div class="modal-backdrop" id="modal-add-dept" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Add Department</h2>
+            <button class="modal-close" onclick="closeModal('modal-add-dept')">&times;</button>
+        </div>
+        <form id="form-add-dept">
+            <div class="form-group"><label>Department Code</label><input type="text" id="dept-code" required placeholder="e.g. ME"></div>
+            <div class="form-group"><label>Department Name</label><input type="text" id="dept-name" required placeholder="Mechanical Engineering"></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Department</button>
+        </form>
+    </div>
+</div>

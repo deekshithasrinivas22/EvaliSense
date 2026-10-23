@@ -1,0 +1,62 @@
+<section class="page" id="page-scanner-dashboard">
+    <header class="page-header">
+        <h1>Scanner Operator Dashboard</h1>
+        <p class="page-subtitle">Intake management, high-resolution upload & scan quality verification</p>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="scn-stat-uploaded">0</div><div class="stat-label">Scripts Uploaded</div></div>
+        <div class="stat-card"><div class="stat-value" id="scn-stat-issues" style="color: var(--color-danger);">0</div><div class="stat-label">Rescans Required</div></div>
+        <div class="stat-card"><div class="stat-value" id="scn-stat-processed" style="color: var(--color-success);">0</div><div class="stat-label">Processed Scripts</div></div>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <h2>Upload Examination Scripts</h2>
+        <form id="form-scanner-upload" style="margin-top: 1rem;">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="upload-exam-select">Select Examination *</label>
+                <select id="upload-exam-select" required style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="upload-student-usn">Student USN / Roll Number (Optional)</label>
+                <input type="text" id="upload-student-usn" placeholder="e.g. 1MS22CS001" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+            </div>
+
+            <div class="upload-area" id="scanner-upload-area" style="margin-bottom: 1rem;">
+                <div class="upload-icon">📤</div>
+                <p>Drag & drop handwritten answer script here</p>
+                <p class="upload-hint">PNG, JPG, JPEG, PDF, TXT (Max 25MB)</p>
+                <input type="file" id="scanner-file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf,.txt" hidden>
+            </div>
+
+            <div id="scanner-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm);">
+                Selected: <strong id="scanner-selected-filename"></strong>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btn-submit-upload" style="width: 100%;">Upload & Validate Scan</button>
+        </form>
+    </div>
+
+    <!-- Scan Issues & Rescan Required -->
+    <div class="card" style="margin-top: 1.5rem;">
+        <h2>Scan Quality Issues & Rescan Required</h2>
+        <div class="table-responsive">
+            <table class="data-table" id="table-scanner-issues">
+                <thead>
+                    <tr>
+                        <th>Script ID</th>
+                        <th>Script Name</th>
+                        <th>Issue Type</th>
+                        <th>Description</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="7">No open scan issues.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

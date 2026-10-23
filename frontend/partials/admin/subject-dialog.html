@@ -1,0 +1,16 @@
+<div class="modal-backdrop" id="modal-add-subject" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Add Subject</h2>
+            <button class="modal-close" onclick="closeModal('modal-add-subject')">&times;</button>
+        </div>
+        <form id="form-add-subject">
+            <div class="form-group"><label>Subject Code</label><input type="text" id="sub-code" required placeholder="CS502"></div>
+            <div class="form-group"><label>Subject Name</label><input type="text" id="sub-name" required placeholder="Database Management Systems"></div>
+            <div class="form-group"><label>Department</label><select id="sub-dept-select" required></select></div>
+            <div class="form-group"><label>Semester</label><input type="number" id="sub-sem" min="1" max="10" required value="5"></div>
+            <div class="form-group"><label>Maximum Marks</label><input type="number" id="sub-marks" min="1" required value="100"></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Subject</button>
+        </form>
+    </div>
+</div>

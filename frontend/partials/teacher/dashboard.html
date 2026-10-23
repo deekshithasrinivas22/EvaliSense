@@ -1,0 +1,88 @@
+<section class="page" id="page-teacher-dashboard">
+    <header class="page-header">
+        <h1>Teacher Evaluation Portal</h1>
+        <p class="page-subtitle">Academic examination evaluation overview, assigned coursework & pending verification tasks</p>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="t-stat-exams">0</div>
+            <div class="stat-label">My Examinations</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="t-stat-keys">0</div>
+            <div class="stat-label">Active Answer Keys</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="t-stat-pending" style="color: var(--color-danger);">0</div>
+            <div class="stat-label">Pending Reviews</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="t-stat-completed" style="color: var(--color-success);">0</div>
+            <div class="stat-label">Completed Reviews</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="t-stat-subjects">0</div>
+            <div class="stat-label">Assigned Subjects</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+        <div class="card" style="cursor: pointer; transition: transform var(--transition-fast);" onclick="showPage('teacher-reviews')">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.75rem;">⚖️</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.05rem;">Pending Risk Reviews</h3>
+                    <small style="color: var(--color-text-secondary);">Verify AI-flagged high-risk student evaluations</small>
+                </div>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.5rem;">Examine OCR handwriting, compare semantic rubrics, and award authoritative final marks.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; color: var(--color-primary-600); font-weight: 600; font-size: 0.85rem;">Go to Pending Reviews →</span>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: transform var(--transition-fast);" onclick="showPage('teacher-keys-rubrics')">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.75rem;">📝</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.05rem;">Answer Keys & Rubrics</h3>
+                    <small style="color: var(--color-text-secondary);">Manage reference keys & structured question rubrics</small>
+                </div>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.5rem;">Upload new versions, verify OCR extracted text, manage multi-criteria rubrics, and approve keys.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; color: var(--color-primary-600); font-weight: 600; font-size: 0.85rem;">Manage Answer Keys →</span>
+        </div>
+
+        <div class="card" style="cursor: pointer; transition: transform var(--transition-fast);" onclick="showPage('results')">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.75rem;">📊</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.05rem;">Class Results</h3>
+                    <small style="color: var(--color-text-secondary);">Authoritative student marks & performance</small>
+                </div>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.5rem;">Inspect finalized exam results, class averages, pass rates, and individual answer sheets.</p>
+            <span style="display: inline-block; margin-top: 0.75rem; color: var(--color-primary-600); font-weight: 600; font-size: 0.85rem;">View Class Results →</span>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>My Assigned Subjects</h2>
+            <span style="font-size: 0.85rem; color: var(--color-text-secondary);">Authorized teaching curriculum</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-teacher-my-subjects">
+                <thead>
+                    <tr>
+                        <th>Subject Code</th>
+                        <th>Subject Name</th>
+                        <th>Section</th>
+                        <th>Academic Year</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="5">Loading assigned subjects...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

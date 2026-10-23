@@ -1,0 +1,17 @@
+<div class="modal-backdrop" id="modal-add-user" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Add New User</h2>
+            <button class="modal-close" onclick="closeModal('modal-add-user')">&times;</button>
+        </div>
+        <form id="form-add-user">
+            <div class="form-group"><label>Role</label><select id="user-role-select" required></select></div>
+            <div class="form-group"><label>Full Name</label><input type="text" id="user-fullname" required placeholder="e.g. Dr. John Doe"></div>
+            <div class="form-group"><label>Username</label><input type="text" id="user-username" required placeholder="johndoe"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="user-email" required placeholder="johndoe@evalisense.edu"></div>
+            <div class="form-group"><label>Employee ID</label><input type="text" id="user-empid" placeholder="EMP-001"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="user-password" required placeholder="Min 6 characters"></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create User</button>
+        </form>
+    </div>
+</div>

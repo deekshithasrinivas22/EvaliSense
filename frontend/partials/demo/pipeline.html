@@ -1,0 +1,83 @@
+<section class="page" id="page-evaluate">
+    <header class="page-header">
+        <h1>Interactive AI Pipeline Demo</h1>
+        <p class="page-subtitle">Choose the subject and exam once, then evaluate a complete numbered student answer script.</p>
+    </header>
+
+    <div class="card">
+        <h2>Select the test</h2>
+        <div class="form-group"><label for="demo-subject">Subject</label><select id="demo-subject"><option value="">Select subject…</option></select></div>
+        <div class="form-group"><label for="demo-exam">Examination</label><select id="demo-exam" disabled><option value="">Select subject first…</option></select></div>
+        <p id="demo-context-status" role="status">Select a subject to begin.</p>
+        <p>Upload the whole student answer script. Answers must retain their question numbers (for example, “1. B” and “21. …”). Unreadable, repeated or missing numbers are flagged for review.</p>
+    </div>
+
+    <div class="card" id="upload-section">
+        <h2>Upload the whole student answer script</h2>
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📤</div>
+            <p>Drag & drop the complete student answer script here</p>
+            <p class="upload-hint">Supports: Images (PNG, JPG, JPEG, BMP, TIF), PDF, or TXT files</p>
+            <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf,.txt" hidden>
+        </div>
+        <div class="upload-preview" id="upload-preview" style="display: none;">
+            <img id="preview-image" alt="Uploaded handwritten answer" style="max-width: 100%; max-height: 300px;">
+            <p id="preview-filename"></p>
+            <div id="text-file-preview" style="display: none; background: var(--color-surface-2); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-family: monospace; white-space: pre-wrap; max-height: 250px; overflow-y: auto; font-size: 0.9rem; margin-top: 0.5rem;"></div>
+        </div>
+    </div>
+
+    <div class="card" id="preprocess-section" style="display: none;">
+        <h2>Step 2 — Preprocessing</h2>
+        <button class="btn btn-primary" id="btn-preprocess">Run Preprocessing</button>
+        <div class="result-box" id="preprocess-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="htr-section" style="display: none;">
+        <h2>Step 3 — Recognize Student Answers</h2>
+        <button class="btn btn-primary" id="btn-recognize">Recognize Text</button>
+        <p style="color:var(--color-text-secondary);">TXT and readable PDF pages skip handwriting recognition. Recognition runs locally on your computer. Scan bleed-through is filtered, tilted text is straightened, and MCQ numbers and choices are read separately. Written lines also use a local handwriting reader and optical cross-checks. Uncertain candidates remain visible with the original image for confirmation. Crossed-out text requires review.</p>
+        <p id="htr-progress" role="status" aria-live="polite"></p>
+        <div class="result-box" id="htr-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="evaluate-section">
+        <h2>Evaluate the whole answer script</h2>
+        <p>All imported exam questions and saved reference answers are loaded automatically. MCQs use exact option matching; written answers use saved criteria, or a clearly labelled preliminary reference-answer similarity score.</p>
+        <button class="btn btn-primary" id="btn-evaluate" disabled style="margin-top: 1rem;">Evaluate Whole Script</button>
+        <div id="script-text-review" style="display:none; margin-top:1rem;">
+            <label for="script-text">Extracted answer script — review and correct OCR mistakes here</label>
+            <textarea id="script-text" rows="14" style="width:100%;white-space:pre-wrap"></textarea>
+            <label><input type="checkbox" id="script-text-reviewed"> I reviewed the extracted answers and question numbers for this script.</label>
+        </div>
+        <div class="result-box" id="eval-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="risk-section" style="display: none;">
+        <h2>Step 5 — Grading Error Risk Prediction</h2>
+        <button class="btn btn-primary" id="btn-predict-risk">Predict Risk</button>
+        <div class="result-box" id="risk-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="review-section-inline" style="display: none;">
+        <h2>Step 6 — Examiner Review</h2>
+        <div class="review-form">
+            <div class="review-summary" id="review-summary"></div>
+            <div class="form-group">
+                <label for="examiner-mark-input">Final Examiner Mark:</label>
+                <input type="number" id="examiner-mark-input" step="0.5" min="0">
+                <span id="max-mark-display"></span>
+            </div>
+            <div class="form-group">
+                <label for="examiner-notes-input">Examiner Notes (optional):</label>
+                <textarea id="examiner-notes-input" rows="3"></textarea>
+            </div>
+            <div class="review-actions">
+                <button class="btn btn-approve" id="btn-approve">Approve AI Mark</button>
+                <button class="btn btn-primary" id="btn-submit-review">Submit Final Mark</button>
+            </div>
+        </div>
+        <div class="result-box" id="review-result" style="display: none;"></div>
+    </div>
+</section>
+

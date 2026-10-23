@@ -78,7 +78,12 @@ function resolveLoginInfo(emailOrUsername) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 let _useLocalFallback = false;
-const _localStore = {};
+const LOCAL_DATA_KEY = 'evalisense_local_data_v2';
+let _localStore = {};
+try { _localStore = JSON.parse(localStorage.getItem(LOCAL_DATA_KEY) || '{}'); } catch (_) {}
+function persistLocalStore() {
+    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(_localStore));
+}
 
 function _getLocalCollection(name) {
     return _localStore[name] || [];
@@ -87,15 +92,17 @@ function _getLocalCollection(name) {
 function _setLocalDoc(collection, id, data) {
     if (!_localStore[collection]) _localStore[collection] = [];
     const idx = _localStore[collection].findIndex(d => d.id === id);
-    const doc = { id, ...data };
+    const doc = { ...(idx >= 0 ? _localStore[collection][idx] : {}), ...data, id };
     if (idx >= 0) _localStore[collection][idx] = doc;
     else _localStore[collection].push(doc);
+    persistLocalStore();
     return doc;
 }
 
 function _deleteLocalDoc(collection, id) {
     if (!_localStore[collection]) return;
     _localStore[collection] = _localStore[collection].filter(d => d.id !== id);
+    persistLocalStore();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -351,100 +358,9 @@ async function seedFirestoreIfEmpty() {
         ];
         for (const e of exams) { await fsSetDoc('exams', e.id, e); }
 
-        // 9. Structured Questions & Rubrics for Exam 1
-        const questions = [
-            {
-                id: 'q_1_1',
-                exam_id: 'exam_1',
-                question_number: 1,
-                question_text: "State and explain the ACID properties of database transactions with their significance.",
-                max_marks: 5.0,
-                reference_answer: "Atomicity: All actions of a transaction execute completely or none do (all-or-nothing). Consistency: Execution of a transaction takes the database from one valid state to another, preserving integrity constraints. Isolation: Concurrent transactions execute without interfering with one another; intermediate states remain invisible. Durability: Once a transaction commits, its effects persist permanently even in the event of system failure.",
-                criteria: [
-                    { id: "c1", description: "Defines Atomicity (all-or-nothing execution)", marks: 1.5, keywords: ["atomicity", "all or nothing", "abort", "rollback"] },
-                    { id: "c2", description: "Explains Consistency and constraint preservation", marks: 1.0, keywords: ["consistency", "integrity constraints", "valid state"] },
-                    { id: "c3", description: "Explains Isolation in concurrent execution", marks: 1.5, keywords: ["isolation", "concurrency", "invisible", "serializable"] },
-                    { id: "c4", description: "Defines Durability upon transaction commit", marks: 1.0, keywords: ["durability", "permanent", "crash", "persist"] }
-                ]
-            },
-            {
-                id: 'q_1_2',
-                exam_id: 'exam_1',
-                question_number: 2,
-                question_text: "Differentiate between B-Tree and B+ Tree index structures. Why are B+ trees preferred for relational database storage?",
-                max_marks: 5.0,
-                reference_answer: "In a B-Tree, both keys and records/pointers are stored in internal and leaf nodes. In a B+ Tree, internal nodes store only search keys to guide indexing, while all record pointers and actual data values reside exclusively in leaf nodes. Furthermore, leaf nodes in a B+ Tree are linked together via a doubly-linked list, enabling efficient sequential range scans. B+ trees provide higher fan-out, shallower tree height, and superior disk I/O performance.",
-                criteria: [
-                    { id: "c1", description: "Key vs record storage location difference", marks: 2.0, keywords: ["internal nodes", "leaf nodes", "data pointers", "keys only"] },
-                    { id: "c2", description: "Doubly linked list in B+ tree leaf nodes for range scans", marks: 1.5, keywords: ["linked list", "sequential", "range scan", "leaves"] },
-                    { id: "c3", description: "Disk I/O efficiency, shallower tree height, higher fan-out", marks: 1.5, keywords: ["fan-out", "disk I/O", "cache", "shallow", "height"] }
-                ]
-            },
-            {
-                id: 'q_1_3',
-                exam_id: 'exam_1',
-                question_number: 3,
-                question_text: "Define Third Normal Form (3NF). Provide an example relation exhibiting transitive dependency and demonstrate its decomposition.",
-                max_marks: 15.0,
-                reference_answer: "A relation is in 3NF if it is in 2NF and no non-prime attribute is transitively dependent on the primary key. Formally, for every non-trivial functional dependency X -> A, either X is a superkey or A is a prime attribute. Example: Employee(EmpID, DeptID, DeptName). Here, EmpID -> DeptID and DeptID -> DeptName, creating a transitive dependency EmpID -> DeptName. Decomposition into 3NF yields: Emp_Dept(EmpID, DeptID) and Department(DeptID, DeptName).",
-                criteria: [
-                    { id: "c1", description: "2NF prerequisite and formal 3NF definition (superkey or prime attribute)", marks: 4.0, keywords: ["2NF", "transitive dependency", "superkey", "prime attribute"] },
-                    { id: "c2", description: "Clear relation example with functional dependencies showing transitive chain", marks: 5.0, keywords: ["functional dependency", "EmpID", "DeptID", "DeptName", "X -> Y -> Z"] },
-                    { id: "c3", description: "Correct lossless-join decomposition into normalized tables", marks: 6.0, keywords: ["decomposition", "lossless", "dependency preserving", "tables"] }
-                ]
-            }
-        ];
-        for (const q of questions) {
-            await fsSetDoc('questions', q.id, {
-                ...q,
-                rubric_json: JSON.stringify({
-                    question: q.question_text,
-                    max_marks: q.max_marks,
-                    reference_answer: q.reference_answer,
-                    criteria: q.criteria
-                })
-            });
-        }
+        // Questions are created from uploaded papers or manual entry, never seeded.
 
-        // 10. Answer Keys (Exam 1)
-        const answerKeys = [
-            {
-                id: 'ak_1_v2',
-                exam_id: 'exam_1',
-                version: 2,
-                original_filename: 'DBMS_Model_Answer_Scheme_v2.pdf',
-                filename: 'DBMS_Model_Answer_Scheme_v2.pdf',
-                uploaded_by: 'teacher1',
-                uploader_name: 'Dr. Marcus Thorne',
-                file_size: 2457600,
-                mime_type: 'application/pdf',
-                status: 'APPROVED',
-                is_approved: true,
-                is_active: true,
-                uploaded_at: '2026-10-14T11:30:00Z',
-                approved_at: '2026-10-15T09:00:00Z',
-                extracted_text: "OFFICIAL MARKING SCHEME: CS501 DATABASE MANAGEMENT SYSTEMS...\nQ1: ACID properties definition with all 4 components...\nQ2: B-Tree vs B+ Tree internal storage and linked list...",
-                notes: 'Official semester midterm verified marking scheme approved by Departmental Faculty.'
-            },
-            {
-                id: 'ak_1_v1',
-                exam_id: 'exam_1',
-                version: 1,
-                original_filename: 'DBMS_Answer_Key_Draft.pdf',
-                filename: 'DBMS_Answer_Key_Draft.pdf',
-                uploaded_by: 'teacher1',
-                uploader_name: 'Dr. Marcus Thorne',
-                file_size: 2120000,
-                mime_type: 'application/pdf',
-                status: 'SUPERSEDED',
-                is_approved: false,
-                is_active: false,
-                uploaded_at: '2026-10-11T14:15:00Z',
-                extracted_text: "Draft marking scheme v1...",
-                notes: 'Superseded by version 2.'
-            }
-        ];
-        for (const ak of answerKeys) { await fsSetDoc('answer_keys', ak.id, ak); }
+        // Answer keys are uploaded files, never seeded metadata.
 
         // 11. Answer Scripts & Evaluations
         const scripts = [
@@ -738,9 +654,202 @@ async function fbLogout() {
     localStorage.removeItem('evalisense_user');
 }
 
+// Real answer keys have stored original files and a reviewed numbered-answer map.
+function actualAnswerKeys(keys) {
+    return keys.filter(k => k.source === 'uploaded_answer_key' && k.file_id && Array.isArray(k.answers))
+        .sort((a, b) => (b.version || 0) - (a.version || 0) || String(b.uploaded_at || '').localeCompare(String(a.uploaded_at || '')));
+}
+function activeStoredAnswerKey(keys, examId) {
+    const real = actualAnswerKeys(keys).filter(k => k.exam_id === examId);
+    return real.find(k => k.is_active) || null;
+}
+function normalizeKeySection(value) {
+    return String(value || '').replace(/^(?:section|part)\s*/i, '').trim().toUpperCase();
+}
+function resolveKeyReference(question, key) {
+    if (!key || key.exam_id !== question.exam_id) return {status: 'missing_key'};
+    const number = Number(question.source_question_number || question.question_number);
+    const section = normalizeKeySection(question.section);
+    let entries = key.answers.filter(a => Number(a.question_number) === number);
+    if (section) {
+        const exact = entries.filter(a => normalizeKeySection(a.section) === section);
+        entries = exact.length ? exact : entries.filter(a => !normalizeKeySection(a.section));
+    }
+    if (!entries.length) return {status: 'unmatched'};
+    if (entries.length !== 1) return {status: 'ambiguous'};
+    const entry = entries[0];
+    if (entry.answer_type && entry.answer_type !== question.question_type) return {status: 'type_mismatch'};
+    const answer = String(entry.answer_text || '').trim();
+    let reference = answer;
+    let optionLabel = String(entry.correct_option || '').trim().toUpperCase();
+    if (question.question_type === 'MCQ') {
+        const options = question.options || [];
+        if (!optionLabel) {
+            const normalized = answer.toLowerCase().replace(/\s+/g, ' ');
+            const matches = options.filter(o => String(o.text).trim().toLowerCase().replace(/\s+/g, ' ') === normalized);
+            if (matches.length !== 1) return {status: 'option_needs_review'};
+            optionLabel = matches[0].label;
+        }
+        const matches = options.filter(o => String(o.label).toUpperCase() === optionLabel);
+        if (matches.length !== 1) return {status: 'option_needs_review'};
+        reference = `${optionLabel}. ${matches[0].text}`;
+        if (answer && answer.toLowerCase() !== String(matches[0].text).trim().toLowerCase()) reference += `\n${answer}`;
+    } else if (optionLabel) {
+        reference = entry.raw_answer || `${optionLabel}${answer ? '. ' + answer : ''}`;
+    }
+    if (!reference.trim()) return {status: 'unmatched'};
+    return {status: 'matched', reference_answer: reference, correct_option: optionLabel};
+}
+function attachAnswerKeyReference(question, key) {
+    const q = {...question};
+    // A teacher-edited answer is never replaced by a later key upload.
+    if (q.reference_answer?.trim() && q.reference_source !== 'answer_key') return q;
+    const result = resolveKeyReference(q, key);
+    q.reference_match_status = result.status;
+    q.reference_answer = result.reference_answer || '';
+    q.correct_option = result.correct_option || '';
+    q.reference_source = 'answer_key';
+    q.reference_key_id = key?.id || '';
+    q.reference_key_version = key?.version || null;
+    q.rubric_json = JSON.stringify({question: q.question_text, max_marks: q.max_marks,
+        reference_answer: q.reference_answer, criteria: q.criteria || []});
+    return q;
+}
+async function readExamDocuments(collection, examId) {
+    if (!fbDb || _useLocalFallback) return _getLocalCollection(collection).filter(d => d.exam_id === examId);
+    // Unlike the generic fallback helpers, errors must not look like empty data.
+    const snapshot = await fbDb.collection(collection).where('exam_id', '==', examId).get();
+    return snapshot.docs.map(d => ({...d.data(), id: d.id}));
+}
+async function commitDocumentChanges(changes) {
+    if (changes.length > 450) throw new Error('Too many records for one safe save (maximum 450 changes).');
+    const local = !fbDb || _useLocalFallback;
+    if (!local) {
+        const batch = fbDb.batch();
+        for (const change of changes) {
+            const {id, ...data} = change.data;
+            batch.set(fbDb.collection(change.collection).doc(id), data);
+        }
+        await batch.commit();
+    }
+    const snapshot = JSON.stringify(_localStore);
+    try {
+        // Persist once, so an offline save is all-or-nothing even on quota failure.
+        for (const change of changes) {
+            const {collection, data} = change;
+            if (!_localStore[collection]) _localStore[collection] = [];
+            _localStore[collection] = [..._localStore[collection].filter(d => d.id !== data.id), data];
+        }
+        persistLocalStore();
+    } catch (err) {
+        _localStore = JSON.parse(snapshot);
+        if (local) throw new Error('Browser storage is full. The previous key is unchanged; free space and retry.');
+        console.warn('Saved to cloud; local cache could not be updated.', err);
+    }
+    return local;
+}
+async function saveExamAnswerKey(examId, document) {
+    if (!examId || document.exam_id !== examId || !/^[a-f0-9]{32}$/.test(document.file_id || '')) throw new Error('The answer key belongs to a different examination.');
+    if (!document.answers?.length) throw new Error('Review the numbered answers before saving.');
+    const seen = new Set();
+    const answers = document.answers.map(a => {
+        const number = Number(a.question_number);
+        const section = normalizeKeySection(a.section);
+        const identity = `${section}:${number}`;
+        const correct_option = String(a.correct_option || '').trim().toUpperCase();
+        const answer_text = String(a.answer_text || '').trim();
+        const answer_type = a.answer_type || '';
+        if (!['', 'MCQ', 'WRITTEN'].includes(answer_type)) throw new Error('Invalid answer-key question type.');
+        if (!Number.isInteger(number) || number < 1 || seen.has(identity) ||
+            (correct_option && !/^[A-H]$/.test(correct_option)) || (!answer_text && !correct_option)) {
+            throw new Error('Each answer needs a unique section/number and either answer text or a valid option letter A–H.');
+        }
+        seen.add(identity);
+        return {question_number: number, section, answer_type, correct_option, answer_text,
+            raw_answer: correct_option ? `${correct_option}${answer_text ? '. ' + answer_text : ''}` : answer_text};
+    });
+    const [keys, questions] = await Promise.all([readExamDocuments('answer_keys', examId), readExamDocuments('questions', examId)]);
+    const real = actualAnswerKeys(keys);
+    const id = `ak_${document.file_id}`;
+    const previous = real.find(k => k.id === id);
+    const key = {...document, answers, id, exam_id: examId, source: 'uploaded_answer_key',
+        version: previous?.version || Math.max(0, ...real.map(k => Number(k.version) || 0)) + 1,
+        uploaded_at: previous?.uploaded_at || new Date().toISOString(),
+        is_active: true, is_approved: false, status: 'UPLOADED'};
+    // Leave headroom under Firestore's per-document size limit, including Unicode.
+    const bytes = encodeURIComponent(JSON.stringify(key)).replace(/%[A-F\d]{2}/g, 'x').length;
+    if (bytes > 850000) throw new Error('This key is too large to save safely. Upload a smaller exam-specific key.');
+    const changes = keys.filter(k => k.id !== id && k.is_active).map(k => ({collection: 'answer_keys', data: {...k, is_active: false, status: 'SUPERSEDED'}}));
+    changes.push({collection: 'answer_keys', data: key});
+    let matched = 0, unresolved = 0, preserved = 0;
+    for (const question of questions.filter(q => q.source === 'question_paper' || q.id === `q_${examId}_${q.question_number}`)) {
+        if (question.reference_answer?.trim() && question.reference_source !== 'answer_key') { preserved++; continue; }
+        const next = attachAnswerKeyReference(question, key);
+        if (next.reference_match_status === 'matched') matched++; else unresolved++;
+        changes.push({collection: 'questions', data: next});
+    }
+    changes.push({collection: 'audit_logs', data: {id: `answer_key_upload_${key.file_id}`,
+        user_name: key.uploader_name || key.uploaded_by || 'Teacher', user_role: 'TEACHER',
+        action: 'UPLOAD_ANSWER_KEY', entity_type: 'answer_key', entity_id: key.id,
+        details: `Stored answer key v${key.version} for exam ${examId}; matched ${matched} references.`,
+        timestamp: new Date().toISOString()}});
+    const local = await commitDocumentChanges(changes);
+    return {key, matched, unresolved, preserved, local};
+}
+
+// Strict, atomic import: cloud failures never report a successful import.
+async function importExamQuestions(examId, questions, mode = 'replace', filename = '') {
+    if (!examId || !['merge', 'replace'].includes(mode) || !questions.length) throw new Error('Invalid import.');
+    const numbers = new Set();
+    for (const q of questions) {
+        if (!Number.isInteger(q.question_number) || q.question_number < 1 || numbers.has(q.question_number) ||
+            !q.question_text?.trim() || !Number.isFinite(q.max_marks) || q.max_marks <= 0 ||
+            !['MCQ', 'WRITTEN'].includes(q.question_type) ||
+            (q.question_type === 'MCQ' && (!Array.isArray(q.options) || q.options.length < 2 ||
+                q.options.some(o => !/^[A-H]$/.test(o.label) || !o.text?.trim()) || new Set(q.options.map(o => o.label)).size !== q.options.length))) {
+            throw new Error('Review the preview: question numbers must be unique positive integers, marks positive, and each question must have a type with valid MCQ choices.');
+        }
+        numbers.add(q.question_number);
+    }
+    const local = !fbDb || _useLocalFallback;
+    const existing = local ? _getLocalCollection('questions').filter(q => q.exam_id === examId) :
+        (await fbDb.collection('questions').where('exam_id', '==', examId).get()).docs.map(d => ({...d.data(), id: d.id}));
+    const key = activeStoredAnswerKey(await readExamDocuments('answer_keys', examId), examId);
+    const keptNumbers = new Set(existing.map(q => Number(q.question_number)));
+    const incoming = questions.filter(q => mode === 'replace' || !keptNumbers.has(q.question_number)).map(q => attachAnswerKeyReference({
+        ...q, id: `q_${examId}_${q.question_number}`, exam_id: examId,
+        source_filename: filename, source: 'question_paper',
+        rubric_json: JSON.stringify({question: q.question_text, max_marks: q.max_marks,
+            reference_answer: q.reference_answer || '', criteria: q.criteria || []})
+    }, key));
+    const removed = mode === 'replace' ? existing : [];
+    if (removed.length + incoming.length > 450) throw new Error('Import exceeds the safe batch limit (450 changes).');
+    if (!local) {
+        const batch = fbDb.batch();
+        for (const q of removed.filter(q => !incoming.some(n => n.id === q.id))) batch.delete(fbDb.collection('questions').doc(q.id));
+        for (const q of incoming) { const {id, ...data} = q; batch.set(fbDb.collection('questions').doc(id), data); }
+        await batch.commit();
+    }
+    const snapshot = JSON.stringify(_localStore);
+    try {
+        _localStore.questions = [..._getLocalCollection('questions').filter(q =>
+            !removed.some(r => r.id === q.id) && !incoming.some(r => r.id === q.id)), ...incoming];
+        persistLocalStore();
+    } catch (err) {
+        _localStore = JSON.parse(snapshot);
+        if (local) throw err;
+        console.warn('Cloud import saved; browser cache unavailable.', err);
+    }
+    return {added: incoming.length, kept: mode === 'merge' ? existing.length : 0, local,
+        matched: incoming.filter(q => q.reference_match_status === 'matched').length,
+        unresolved: incoming.filter(q => q.reference_match_status !== 'matched').length};
+}
+
 // Global Export
 window.firebaseConfig = firebaseConfig;
 window.EvaliSenseDB = {
+    actualAnswerKeys, activeStoredAnswerKey, resolveKeyReference, attachAnswerKeyReference, saveExamAnswerKey,
+    importExamQuestions,
     fbAuth,
     fbDb,
     DEMO_LOGINS,

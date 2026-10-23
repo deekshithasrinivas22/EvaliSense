@@ -1,0 +1,35 @@
+<div class="modal-backdrop" id="modal-login" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Sign In to EvaliSense</h2>
+            <button class="modal-close" onclick="closeModal('modal-login')">&times;</button>
+        </div>
+        <form id="form-login">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="login-username">Username or Email</label>
+                <input type="text" id="login-username" required placeholder="admin or email">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+        </form>
+
+        <div class="quick-signin-group">
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary);">One-Click Role Authentication (Firebase Auth):</span>
+            <button class="btn-demo" type="button" onclick="quickLogin('admin', 'Admin@123')">
+                <span>👑 <strong>HOD / Admin</strong> (Prof. Eleanor Vance — <code>hod@evalisense.edu</code>)</span>
+                <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+            </button>
+            <button class="btn-demo" type="button" onclick="quickLogin('teacher1', 'Teacher@123')">
+                <span>👩‍🏫 <strong>Teacher / Examiner</strong> (Dr. Marcus Thorne — <code>teacher@evalisense.edu</code>)</span>
+                <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+            </button>
+            <button class="btn-demo" type="button" onclick="quickLogin('scanner1', 'Scanner@123')">
+                <span>📠 <strong>Scanner Operator</strong> (Alex Rivera — <code>scanner@evalisense.edu</code>)</span>
+                <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+            </button>
+        </div>
+    </div>
+</div>

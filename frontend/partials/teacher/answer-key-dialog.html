@@ -1,0 +1,33 @@
+<div class="modal-backdrop" id="modal-upload-ak" style="display: none;">
+    <div class="modal-card" style="max-width: 850px;">
+        <div class="modal-header">
+            <h2>Upload New Answer Key Version</h2>
+            <button class="modal-close" onclick="closeModal('modal-upload-ak')">&times;</button>
+        </div>
+        <form id="form-upload-ak-modal">
+            <input type="hidden" id="ak-modal-exam-id">
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">Upload the answer key before or after the question paper. Review its numbered answers, then save. References are matched only within this examination; teacher-edited answers are preserved.</p>
+            <div class="upload-area" id="ak-modal-upload-area" style="margin-bottom: 1rem; border: 2px dashed var(--color-border); padding: 1.5rem; text-align: center; border-radius: var(--radius-sm); cursor: pointer;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                <p style="margin: 0; font-weight: 500;">Click or drag & drop official answer key here</p>
+                <small style="color: var(--color-text-secondary);">Supported: text PDF or TXT (Max 50MB)</small>
+                <input type="file" id="ak-modal-file-input" accept=".pdf,.txt" style="display: none;">
+            </div>
+            <div id="ak-modal-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm); font-size: 0.9rem;">
+                Selected: <strong id="ak-modal-filename-display"></strong>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="ak-modal-notes">Version Notes (optional)</label>
+                <textarea id="ak-modal-notes" rows="2" placeholder="e.g. Revised marking scheme following faculty moderation"></textarea>
+            </div>
+            <div id="ak-parsed-preview" style="display:none; margin:1rem 0;">
+                <h3>Review Numbered Answers</h3>
+                <p id="ak-parse-summary" style="color:#92400e;"></p>
+                <p>Use the paper's section and question number. For MCQs, enter the correct option letter; for written questions, enter the model answer. Correct any extraction errors here.</p>
+                <div id="ak-answer-rows" style="max-height:400px; overflow-y:auto;"></div>
+                <label><input type="checkbox" id="ak-review-confirmed"> I checked the answer numbers, sections, option letters, and model answers.</label>
+            </div>
+            <button type="submit" class="btn btn-primary" id="btn-submit-ak-modal" style="width: 100%;">Read &amp; Preview Answers</button>
+        </form>
+    </div>
+</div>

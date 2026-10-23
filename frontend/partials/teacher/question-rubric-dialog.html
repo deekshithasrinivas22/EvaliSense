@@ -1,0 +1,74 @@
+<div class="modal-backdrop" id="modal-edit-question-rubric" style="display: none;">
+    <div class="modal-card" style="max-width: 720px;">
+        <div class="modal-header">
+            <h2 id="modal-eq-title">Edit Question & Marking Rubric</h2>
+            <button class="modal-close" onclick="closeModal('modal-edit-question-rubric')">&times;</button>
+        </div>
+        <form id="form-edit-question-rubric">
+            <input type="hidden" id="eq-question-id">
+            <input type="hidden" id="eq-exam-id">
+            <div class="form-group">
+                <label for="eq-question-type">Question type</label>
+                <select id="eq-question-type"><option value="WRITTEN">Written answer</option><option value="MCQ">MCQ</option><option value="UNKNOWN">Needs review</option></select>
+            </div>
+            <div class="form-group">
+                <label for="eq-options">MCQ choices (one per line: A|choice text)</label>
+                <textarea id="eq-options" rows="4"></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 100px 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group" style="margin: 0;">
+                    <label for="eq-qnum">Q # *</label>
+                    <input type="number" id="eq-qnum" required min="1" value="1" style="width: 100%; padding: 0.55rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label for="eq-max-marks">Maximum Marks *</label>
+                    <input type="number" id="eq-max-marks" required step="any" min="0.01" value="5.0" style="width: 100%; padding: 0.55rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="eq-qtext">Question Text *</label>
+                <textarea id="eq-qtext" rows="2" required placeholder="State and explain the fundamental concepts..." style="width: 100%; padding: 0.55rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="eq-ref-answer">Reference Answer / Model Solution *</label>
+                <textarea id="eq-ref-answer" rows="3" required placeholder="Comprehensive expected solution used as ground truth for semantic similarity comparison..." style="width: 100%; padding: 0.55rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></textarea>
+            </div>
+
+            <!-- File Upload for Question/Answer Import -->
+            <div style="border: 1px dashed var(--color-border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem; text-align: center; cursor: pointer; background: var(--color-surface-2);" id="eq-file-upload-area">
+                <span style="font-size: 1.5rem;">📎</span>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.88rem; font-weight: 500;">Import from File (Optional)</p>
+                <small style="color: var(--color-text-secondary);">Upload TXT, PDF, or Image to auto-fill question text / reference answer</small>
+                <input type="file" id="eq-file-input" accept=".txt,.pdf,.png,.jpg,.jpeg,.bmp,.tif,.tiff" style="display: none;">
+            </div>
+            <div id="eq-file-preview" style="display: none; margin-bottom: 1rem; padding: 0.5rem 0.75rem; background: var(--color-surface-2); border-radius: var(--radius-sm); font-size: 0.85rem;">
+                📄 Imported: <strong id="eq-file-name-display"></strong>
+            </div>
+
+            <!-- Structured Criteria Builder -->
+            <div style="border-top: 1px solid var(--color-border); padding-top: 1rem; margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1rem;">Rubric Scoring Criteria</h3>
+                        <small style="color: var(--color-text-secondary);">Criteria marks allocated must sum to ≤ Maximum Marks (<span id="eq-rubric-sum-hint">0</span> / <span id="eq-rubric-max-hint">5.0</span>)</small>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="btn-add-rubric-criterion" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">+ Add Criterion</button>
+                </div>
+
+                <div id="eq-criteria-container" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem; max-height: 250px; overflow-y: auto;">
+                    <!-- Dynamic criteria rows -->
+                </div>
+            </div>
+
+            <div id="eq-validation-error" style="display: none; margin-top: 1rem; padding: 0.65rem; background: #fee2e2; color: #991b1b; border-radius: var(--radius-sm); font-size: 0.85rem;"></div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-question-rubric')">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btn-save-question-rubric">Save Question & Rubric</button>
+            </div>
+        </form>
+    </div>
+</div>

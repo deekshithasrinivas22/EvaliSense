@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EvaliSense — AI-Powered Handwritten Examination Evaluation Management System">
+    <title>EvaliSense — Examination Evaluation Management</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- include:partials/shared/sidebar.html -->
+    <main class="main-content" id="main-content">
+        <!-- include:partials/shared/topbar.html -->
+        <!-- include:partials/shared/welcome.html -->
+        <!-- include:partials/admin/overview.html -->
+        <!-- include:partials/admin/users.html -->
+        <!-- include:partials/admin/academics.html -->
+        <!-- include:partials/admin/exams.html -->
+        <!-- include:partials/admin/scripts-monitoring.html -->
+        <!-- include:partials/teacher/dashboard.html -->
+        <!-- include:partials/teacher/exams.html -->
+        <!-- include:partials/teacher/keys-rubrics.html -->
+        <!-- include:partials/teacher/pending-reviews.html -->
+        <!-- include:partials/teacher/evaluation-workspace.html -->
+        <!-- include:partials/teacher/completed-reviews.html -->
+        <!-- include:partials/teacher/profile.html -->
+        <!-- include:partials/scanner/dashboard.html -->
+        <!-- include:partials/admin/audit-logs.html -->
+        <!-- include:partials/shared/results.html -->
+        <!-- include:partials/shared/notifications.html -->
+        <!-- include:partials/demo/pipeline.html -->
+        <!-- include:partials/demo/model.html -->
+    </main>
+    <!-- include:partials/shared/login-dialog.html -->
+    <!-- include:partials/admin/user-dialog.html -->
+    <!-- include:partials/admin/role-dialog.html -->
+    <!-- include:partials/admin/department-dialog.html -->
+    <!-- include:partials/admin/section-dialog.html -->
+    <!-- include:partials/admin/student-dialog.html -->
+    <!-- include:partials/admin/subject-dialog.html -->
+    <!-- include:partials/admin/teacher-mapping-dialog.html -->
+    <!-- include:partials/admin/exam-dialog.html -->
+    <!-- include:partials/admin/question-dialog.html -->
+    <!-- include:partials/scanner/rescan-dialog.html -->
+    <!-- include:partials/teacher/answer-key-dialog.html -->
+    <!-- include:partials/teacher/question-rubric-dialog.html -->
+    <!-- include:partials/teacher/extracted-text-dialog.html -->
+    <!-- include:partials/shared/loading.html -->
+    <script>
+        // Prevent ReferenceError for onclick handlers while external scripts load
+        if (typeof quickLogin === 'undefined') {
+            window.quickLogin = async function(u, p) {
+                // Wait for app.js to define the real quickLogin, then call it
+                if (window._realQuickLogin) {
+                    return window._realQuickLogin(u, p);
+                }
+                // If app.js loaded but quickLogin wasn't bound yet, retry after a short delay
+                await new Promise(r => setTimeout(r, 500));
+                if (typeof login === 'function') {
+                    return login(u, p);
+                }
+                alert('Application is still loading, please try again in a moment.');
+            };
+        }
+        if (typeof closeModal === 'undefined') {
+            window.closeModal = function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            };
+        }
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="/static/firebase-db.js?v=10-handwriting-review"></script>
+    <script src="/static/app.js?v=10-handwriting-review"></script>
+</body>
+</html>

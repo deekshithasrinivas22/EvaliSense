@@ -1,0 +1,16 @@
+<div class="modal-backdrop" id="modal-add-student" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Enroll Student</h2>
+            <button class="modal-close" onclick="closeModal('modal-add-student')">&times;</button>
+        </div>
+        <form id="form-add-student">
+            <div class="form-group"><label>USN (Unique Identifier)</label><input type="text" id="stud-usn" required placeholder="1MS22CS010"></div>
+            <div class="form-group"><label>Student Full Name</label><input type="text" id="stud-name" required placeholder="John Student"></div>
+            <div class="form-group"><label>Section</label><select id="stud-sec-select" required></select></div>
+            <div class="form-group"><label>Roll Number (optional)</label><input type="text" id="stud-roll" placeholder="10"></div>
+            <div class="form-group"><label>Email (optional)</label><input type="email" id="stud-email" placeholder="student@evalisense.edu"></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Enroll Student</button>
+        </form>
+    </div>
+</div>

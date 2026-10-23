@@ -1,0 +1,238 @@
+<div class="loading-overlay" id="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <p id="loading-text">Processing...</p>
+</div>
+<div class="modal-backdrop" id="modal-login" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Sign In to EvaliSense</h2>
+            <button class="modal-close" onclick="closeModal('modal-login')">&times;</button>
+        </div>
+        <form id="form-login">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="login-username">Username or Email</label>
+                <input type="text" id="login-username" required placeholder="admin or email">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+        </form>
+
+        <div class="quick-signin-group">
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary);">One-Click Role Authentication (Firebase Auth):</span>
+            <button class="btn-demo" type="button" onclick="quickLogin('admin', 'Admin@123')">
+                <span>👑 <strong>HOD / Admin</strong> (Prof. Eleanor Vance — <code>hod@evalisense.edu</code>)</span>
+                <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+            </button>
+            <button class="btn-demo" type="button" onclick="quickLogin('teacher1', 'Teacher@123')">
+                <span>👩‍🏫 <strong>Teacher / Examiner</strong> (Dr. Marcus Thorne — <code>teacher@evalisense.edu</code>)</span>
+                <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+            </button>
+            <button class="btn-demo" type="button" onclick="quickLogin('scanner1', 'Scanner@123')">
+                <span>📠 <strong>Scanner Operator</strong> (Alex Rivera — <code>scanner@evalisense.edu</code>)</span>
+                <span style="color: var(--color-primary-500); font-weight: 600;">Sign in →</span>
+            </button>
+        </div>
+    </div>
+</div>
+<section class="page" id="page-notifications">
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>Notifications</h1>
+            <p class="page-subtitle">System alerts, new reviews, and scanner quality notifications</p>
+        </div>
+        <button class="btn btn-secondary" id="btn-mark-all-read">Mark All as Read</button>
+    </header>
+
+    <div class="card">
+        <ul id="notifications-list" style="list-style: none;">
+            <li class="empty-state">No notifications.</li>
+        </ul>
+    </div>
+</section>
+<section class="page" id="page-results">
+    <header class="page-header">
+        <h1>Examination Results & Performance</h1>
+        <p class="page-subtitle">Authoritative grades, question breakdowns, class averages & student reports</p>
+    </header>
+
+    <div class="card">
+        <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+            <label for="results-exam-select">Select Examination:</label>
+            <select id="results-exam-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+        </div>
+
+        <div class="stats-grid" id="exam-stats-summary" style="margin-bottom: 1.5rem;">
+            <div class="stat-card"><div class="stat-value" id="r-stat-avg">0.0</div><div class="stat-label">Class Average</div></div>
+            <div class="stat-card"><div class="stat-value" id="r-stat-high">0.0</div><div class="stat-label">Highest Score</div></div>
+            <div class="stat-card"><div class="stat-value" id="r-stat-pass">0%</div><div class="stat-label">Pass Percentage</div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="table-exam-results">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Student Name</th>
+                        <th>USN</th>
+                        <th>Total Marks</th>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6">Select an examination to view results.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>
+<section class="page" id="page-results">
+    <header class="page-header">
+        <h1>Examination Results & Performance</h1>
+        <p class="page-subtitle">Authoritative grades, question breakdowns, class averages & student reports</p>
+    </header>
+
+    <div class="card">
+        <div class="form-group" style="max-width: 400px; margin-bottom: 1.5rem;">
+            <label for="results-exam-select">Select Examination:</label>
+            <select id="results-exam-select" style="width: 100%; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"></select>
+        </div>
+
+        <div class="stats-grid" id="exam-stats-summary" style="margin-bottom: 1.5rem;">
+            <div class="stat-card"><div class="stat-value" id="r-stat-avg">0.0</div><div class="stat-label">Class Average</div></div>
+            <div class="stat-card"><div class="stat-value" id="r-stat-high">0.0</div><div class="stat-label">Highest Score</div></div>
+            <div class="stat-card"><div class="stat-value" id="r-stat-pass">0%</div><div class="stat-label">Pass Percentage</div></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="table-exam-results">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Student Name</th>
+                        <th>USN</th>
+                        <th>Total Marks</th>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6">Select an examination to view results.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <rect x="2" y="2" width="24" height="24" rx="6" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 14h12M14 8v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="14" cy="14" r="4" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+            </svg>
+        </div>
+        <span class="brand-text">EvaliSense</span>
+    </div>
+
+    <ul class="nav-links" id="nav-links">
+        <!-- Dynamically populated based on active role -->
+    </ul>
+
+    <div class="sidebar-footer">
+        <p class="sidebar-note">Human-in-the-Loop<br>Academic Examination AI</p>
+    </div>
+</nav>
+<header class="topbar">
+    <div class="topbar-left">
+        <h3 id="topbar-user-greeting" style="font-size: 1.05rem; margin: 0;">Welcome to EvaliSense</h3>
+        <span id="topbar-role-badge" class="topbar-role-badge role-badge-guest">Guest</span>
+    </div>
+    <div class="topbar-right">
+        <button class="notif-btn" id="btn-toggle-notifs" title="Notifications">
+            🔔 <span class="notif-badge" id="notif-count-badge" style="display: none;">0</span>
+        </button>
+        <button class="btn btn-primary" id="btn-login-open" style="font-size: 0.85rem; padding: 0.45rem 1rem;">Sign In</button>
+        <button class="btn btn-secondary" id="btn-logout" style="display: none; font-size: 0.85rem; padding: 0.45rem 1rem;">Logout</button>
+    </div>
+</header>
+<section class="page active" id="page-dashboard">
+    <header class="page-header">
+        <h1>Examination Evaluation System</h1>
+        <p class="page-subtitle">Role-Based Academic Platform with TrOCR HTR, Rubric Scoring & ML Risk Prediction</p>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card" id="stat-api-status">
+            <div class="stat-value">✓ Online</div>
+            <div class="stat-label">System Status</div>
+        </div>
+        <div class="stat-card" id="stat-active-role">
+            <div class="stat-value" id="display-active-role">Guest</div>
+            <div class="stat-label">Active Role</div>
+        </div>
+        <div class="stat-card" id="stat-model-status">
+            <div class="stat-value">Loaded</div>
+            <div class="stat-label">Risk Predictor</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <h2>System Overview & Roles</h2>
+        <p style="margin-bottom: 1rem;">EvaliSense is an AI-assisted handwritten examination evaluation management system with full human-in-the-loop review. Sign in using your role credentials below to access role-specific workflows.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <h3 style="color: #4338ca;">🏛️ HOD / Administrator</h3>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Manages users, custom roles, departments, sections, students, subjects, exams, answer keys, rubrics, and inspects results.</p>
+                <button class="btn btn-secondary" onclick="quickLogin('admin', 'Admin@123')">Sign in as HOD</button>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <h3 style="color: #15803d;">👩‍🏫 Teacher / Examiner</h3>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Inspects assigned high-risk answers side-by-side with handwriting image, OCR text, rubric, and submits final marks.</p>
+                <button class="btn btn-secondary" onclick="quickLogin('teacher1', 'Teacher@123')">Sign in as Teacher</button>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <h3 style="color: #b45309;">📠 Scanner Operator</h3>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Uploads answer sheets, monitors image quality validation, blur detection, OCR confidence, and manages rescans.</p>
+                <button class="btn btn-secondary" onclick="quickLogin('scanner1', 'Scanner@123')">Sign in as Scanner</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card workflow-card" style="margin-top: 1.5rem;">
+        <h2>End-to-End Evaluation Workflow</h2>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-label">Upload Script</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-label">Quality Check</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-label">TrOCR HTR</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-label">Rubric AI Score</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-label">Risk Model</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">6</div>
+                <div class="step-label">Teacher Review</div>
+            </div>
+        </div>
+    </div>
+</section>

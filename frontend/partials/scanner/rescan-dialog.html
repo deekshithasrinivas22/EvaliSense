@@ -1,0 +1,16 @@
+<div class="modal-backdrop" id="modal-rescan" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Rescan / Replace Script #<span id="rescan-script-id"></span></h2>
+            <button class="modal-close" onclick="closeModal('modal-rescan')">&times;</button>
+        </div>
+        <form id="form-rescan">
+            <input type="hidden" id="rescan-id">
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1rem;">Upload a sharp, clean replacement scan to resolve the scan issue and re-enter evaluation.</p>
+            <div class="form-group">
+                <input type="file" id="rescan-file" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Upload Replacement Scan</button>
+        </form>
+    </div>
+</div>

@@ -18,20 +18,41 @@ class LineRegion:
 class HandwritingLineSegmenter:
     """Segment a full page using ink projections after suppressing ruling lines."""
 
-    def __init__(self, minimum_gap: int = 8, minimum_height: int = 8) -> None:
+    def __init__(self, minimum_gap: int = 2, minimum_height: int = 8) -> None:
         self.minimum_gap = minimum_gap
         self.minimum_height = minimum_height
 
     def segment(self, image: np.ndarray) -> list[LineRegion]:
         gray = self._grayscale(image)
+        scale = min(1.0, 1800 / gray.shape[1])
+        if scale < 1:
+            gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
         height, width = gray.shape[:2]
-        x_offset, y_offset = int(width * 0.15), int(height * 0.04)
-        x_limit, y_limit = int(width * 0.95), int(height * 0.98)
+        x_offset, y_offset = 0, 0
+        x_limit, y_limit = width, height
         working_gray = gray[y_offset:y_limit, x_offset:x_limit]
         ink = self._ink_without_ruling(working_gray)
         row_counts = np.count_nonzero(ink, axis=1)
-        threshold = max(8, int(round(working_gray.shape[1] * 0.05)))
+        threshold = max(8, int(round(working_gray.shape[1] * 0.003)))
         bands = self._group_rows(row_counts >= threshold)
+        # Descenders or a faint border can bridge adjacent writing lines. Split
+        # only unusually tall bands at a low-ink valley between their centres.
+        _, _, components, _ = cv2.connectedComponentsWithStats(ink)
+        heights = components[1:, cv2.CC_STAT_HEIGHT]
+        widths = components[1:, cv2.CC_STAT_WIDTH]
+        glyphs = heights[(heights > 6) & (heights < 120) & (widths > 2)]
+        typical = float(np.median(glyphs)) if len(glyphs) else 24
+        pending, bands = list(bands), []
+        while pending:
+            start, end = pending.pop(0)
+            if end-start > typical*3:
+                left, right = start+int((end-start)*.35), start+int((end-start)*.65)
+                profile = np.convolve(row_counts[start:end], np.ones(5)/5, mode='same')
+                cut = left + int(np.argmin(profile[left-start:right-start]))
+                if profile[cut-start] < profile.max()*.6:
+                    pending[0:0] = [(start,cut),(cut,end)]
+                    continue
+            bands.append((start,end))
         regions: list[LineRegion] = []
         for start, end in bands:
             ys, xs = np.where(ink[start:end, :] > 0)
@@ -41,6 +62,10 @@ class HandwritingLineSegmenter:
             y_start, y_end = max(0, start - 3) + y_offset, min(working_gray.shape[0], end + 3) + y_offset
             if y_end - y_start < self.minimum_height:
                 continue
+            if x_end - x_start < max(12, (y_end-y_start) * 0.7):
+                continue
+            x_start, y_start = int(x_start / scale), int(y_start / scale)
+            x_end, y_end = int(x_end / scale), int(y_end / scale)
             regions.append(LineRegion(len(regions) + 1, (x_start, y_start, x_end - x_start, y_end - y_start), image[y_start:y_end, x_start:x_end].copy()))
         return regions
 
@@ -61,8 +86,20 @@ class HandwritingLineSegmenter:
 
     def _ink_without_ruling(self, gray: np.ndarray) -> np.ndarray:
         _, ink = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        # Scanned notebook borders are often tilted; morphology alone misses them
+        # and their ink bridges otherwise separate handwriting lines.
+        rules = cv2.HoughLinesP(ink, 1, np.pi / 180, threshold=60,
+                               minLineLength=max(80, gray.shape[1] // 3), maxLineGap=15)
+        if rules is not None:
+            for x1, y1, x2, y2 in rules.reshape(-1, 4):
+                dx, dy = abs(int(x2-x1)), abs(int(y2-y1))
+                if dx > 12 * max(1,dy) or dy > 12 * max(1,dx):
+                    cv2.line(ink, (x1,y1), (x2,y2), 0, 11)
         ruling_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (max(40, gray.shape[1] // 2), 1))
         ink = cv2.subtract(ink, cv2.morphologyEx(ink, cv2.MORPH_OPEN, ruling_kernel))
+        # Page borders otherwise connect many separate answer rows into one crop.
+        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, max(80, gray.shape[0] // 4)))
+        ink = cv2.subtract(ink, cv2.morphologyEx(ink, cv2.MORPH_OPEN, vertical_kernel))
         count, labels, stats, _ = cv2.connectedComponentsWithStats(
             ink, connectivity=8, ltype=cv2.CV_32S
         )
@@ -82,12 +119,16 @@ class HandwritingLineSegmenter:
                 "Filtered ink must be a 2D uint8 array: "
                 f"shape={filtered.shape}, dtype={filtered.dtype}"
             )
-        for label in range(1, count):
-            _, _, width, height, area = stats[label]
-            is_ruling_or_border = width > gray.shape[1] * 0.30 and height <= 12
-            is_small_noise = area < 8
-            if not is_ruling_or_border and not is_small_noise:
-                filtered[labels == label] = 255
+        # Build one component lookup table, then scan the label image once.
+        # Repeating labels == label for every component costs pixels * components.
+        keep = np.zeros(count, dtype=np.uint8)
+        if count > 1:
+            component_widths = stats[1:, cv2.CC_STAT_WIDTH]
+            component_heights = stats[1:, cv2.CC_STAT_HEIGHT]
+            component_areas = stats[1:, cv2.CC_STAT_AREA]
+            ruling = (component_widths > gray.shape[1] * 0.30) & (component_heights <= 12)
+            keep[1:] = (~ruling & (component_areas >= 8)).astype(np.uint8) * 255
+        filtered = keep[labels]
         ink = filtered
         return cv2.morphologyEx(ink, cv2.MORPH_CLOSE, np.ones((3, 3), dtype=np.uint8))
 
@@ -106,3 +147,5 @@ class HandwritingLineSegmenter:
         if start is not None and last_active is not None:
             bands.append((start, last_active + 1))
         return bands
+
+

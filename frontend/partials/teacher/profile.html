@@ -1,0 +1,49 @@
+<section class="page" id="page-teacher-profile">
+    <header class="page-header">
+        <h1>My Faculty Profile</h1>
+        <p class="page-subtitle">Authenticated teacher account details, roles, and academic assignments</p>
+    </header>
+
+    <div class="card" style="max-width: 750px;">
+        <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-border);">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700;" id="prof-avatar">
+                T
+            </div>
+            <div>
+                <h2 style="margin: 0;" id="prof-name">Dr. Marcus Thorne</h2>
+                <span class="badge" style="background: #eef2ff; color: #4338ca; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: var(--radius-sm);" id="prof-role-badge">TEACHER</span>
+                <div style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.25rem;" id="prof-dept">Department of Computer Science & Engineering</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">Email Address</div>
+                <div style="font-size: 0.95rem; font-weight: 600;" id="prof-email">teacher@evalisense.edu</div>
+            </div>
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">Employee ID</div>
+                <div style="font-size: 0.95rem; font-weight: 600;" id="prof-empid">EMP-TCH-08</div>
+            </div>
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">Account Status</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--color-success);">✓ Active & Verified</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 0.75rem;">Curriculum Subject Allocations</h3>
+        <div class="table-responsive">
+            <table class="data-table" id="table-profile-subjects">
+                <thead>
+                    <tr>
+                        <th>Subject Code</th>
+                        <th>Subject Name</th>
+                        <th>Section</th>
+                        <th>Academic Year</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="4">Loading subjects...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

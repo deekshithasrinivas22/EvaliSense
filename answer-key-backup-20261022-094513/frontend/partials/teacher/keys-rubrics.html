@@ -1,0 +1,136 @@
+<section class="page" id="page-teacher-keys-rubrics">
+    <header class="page-header">
+        <h1>Answer Keys & Marking Rubrics</h1>
+        <p class="page-subtitle">Official examination reference keys, OCR text extraction, version history, and structured rubrics</p>
+    </header>
+
+    <!-- Top Selectors Card -->
+    <div class="card" style="margin-bottom: 1.25rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin: 0;">
+                <label for="tkr-subject-select" style="font-weight: 600;">Select Assigned Subject *</label>
+                <select id="tkr-subject-select" style="width: 100%; padding: 0.65rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.95rem;">
+                    <option value="">Select subject...</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label for="tkr-exam-select" style="font-weight: 600;">Select Examination *</label>
+                <select id="tkr-exam-select" style="width: 100%; padding: 0.65rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.95rem;">
+                    <option value="">Select examination...</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn btn-secondary" id="btn-tkr-refresh" style="padding: 0.65rem 1.25rem;">🔄 Refresh Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Answer Key Card -->
+    <div class="card" id="card-active-key" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 style="margin: 0;">Active Answer Key</h2>
+                    <span class="badge" id="tkr-key-version-badge" style="background: #eef2ff; color: #4338ca; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm);">Version —</span>
+                    <span class="badge" id="tkr-key-approval-badge" style="background: #fef3c7; color: #b45309; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm);">Pending</span>
+                </div>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-top: 0.25rem;">This official marking scheme is consumed by the AI evaluation pipeline and human risk review.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" id="btn-tkr-download" style="font-size: 0.85rem;">📥 Download Key File</button>
+                <button class="btn btn-secondary" id="btn-tkr-replace" style="font-size: 0.85rem;">🔄 Replace / Upload New Version</button>
+                <button class="btn btn-secondary" id="btn-tkr-extract" style="font-size: 0.85rem;">🔍 Extract Text Preview</button>
+                <button class="btn btn-primary" id="btn-tkr-approve" style="font-size: 0.85rem;">✅ Approve Answer Key</button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; background: #f8fafc; padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);" id="tkr-key-meta-grid">
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">File Name</div>
+                <div style="font-size: 0.95rem; font-weight: 600; word-break: break-all; color: var(--color-text);" id="tkr-key-filename">—</div>
+            </div>
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">Uploaded By</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--color-text);" id="tkr-key-uploader">—</div>
+            </div>
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">Upload Date</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--color-text);" id="tkr-key-date">—</div>
+            </div>
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-secondary); font-weight: 600;">Approval Status</div>
+                <div style="font-size: 0.95rem; font-weight: 600;" id="tkr-key-status-text">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version History Card -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="margin-bottom: 1rem;">Version History</h2>
+        <div class="table-responsive">
+            <table class="data-table" id="table-tkr-versions">
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Original Filename</th>
+                        <th>Uploaded By</th>
+                        <th>Upload Date</th>
+                        <th>State</th>
+                        <th>Approval</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="7">Select an examination to view version history.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Structured Exam Questions & Marking Rubrics Card -->
+    <div class="card" id="card-questions-rubrics">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h2 style="margin: 0;">Structured Exam Questions & Marking Rubrics</h2>
+                <small style="color: var(--color-text-secondary);">Upload your question paper to auto-extract questions and marks. Supports PDF, TXT, and image files.</small>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" id="btn-tkr-upload-qp">📄 Upload Question Paper</button>
+                <button class="btn btn-secondary" id="btn-tkr-add-question">+ Add Manually</button>
+            </div>
+        </div>
+
+        <!-- Question Paper Upload Area (initially hidden) -->
+        <div id="qp-upload-section" style="display: none; margin-bottom: 1.5rem;">
+            <div class="upload-area" id="qp-upload-area" style="border: 2px dashed var(--color-primary-600); padding: 2rem; text-align: center; border-radius: var(--radius-sm); cursor: pointer; background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(99,102,241,0.12));">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📋</div>
+                <p style="margin: 0; font-weight: 600; font-size: 1rem;">Upload Question Paper</p>
+                <p style="margin: 0.25rem 0 0 0; color: var(--color-text-secondary); font-size: 0.88rem;">
+                    Drop your question paper here or click to browse<br>
+                    <strong>Supported: PDF, TXT, PNG, JPG, JPEG</strong> — Questions and marks will be extracted automatically
+                </p>
+                <input type="file" id="qp-file-input" accept=".pdf,.txt,.png,.jpg,.jpeg,.bmp,.tif,.tiff" style="display: none;">
+            </div>
+            <div id="qp-extraction-status" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--color-surface-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                    <span id="qp-extraction-status-text">Extracting questions from uploaded file...</span>
+                </div>
+            </div>
+            <div id="qp-extraction-result" style="display: none; margin-top: 1rem; padding: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div>
+                        <strong style="color: #166534;">✓ Extraction Complete</strong>
+                        <span id="qp-extraction-summary" style="font-size: 0.88rem; color: var(--color-text-secondary); margin-left: 0.5rem;"></span>
+                    </div>
+                    <label>Import mode <select id="qp-import-mode"><option value="replace" selected>Replace: show ONLY this paper; remove previous exam questions</option><option value="merge">Merge: intentionally keep previous questions and rubric edits</option></select></label>
+                    <button class="btn btn-primary" id="btn-qp-import" style="font-size: 0.85rem;">Import All Questions</button>
+                </div>
+                <label style="display:block; margin:0.75rem 0;"><input type="checkbox" id="qp-review-confirmed"> I checked the question types, MCQ choices, and allotted marks against the paper.</label>
+                <div id="qp-extracted-questions-preview" style="max-height: 550px; overflow-y: auto; margin-top: 0.5rem;"></div>
+            </div>
+        </div>
+
+        <div id="tkr-questions-container">
+            <p class="empty-state">Select an examination to inspect questions and marking rubrics.</p>
+        </div>
+    </div>
+</section>

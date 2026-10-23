@@ -1,0 +1,17 @@
+<div class="modal-backdrop" id="modal-extract-preview" style="display: none;">
+    <div class="modal-card" style="max-width: 650px;">
+        <div class="modal-header">
+            <h2>Extracted Text Preview</h2>
+            <button class="modal-close" onclick="closeModal('modal-extract-preview')">&times;</button>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Raw text extracted by OCR from the active official answer key file. Teachers can review and verify before approving:</p>
+            <div style="background: var(--color-surface-2); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-family: monospace; white-space: pre-wrap; max-height: 350px; overflow-y: auto; font-size: 0.9rem;" id="extract-preview-text">
+                Loading extracted text...
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" onclick="closeModal('modal-extract-preview')">Done</button>
+        </div>
+    </div>
+</div>

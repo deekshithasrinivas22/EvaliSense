@@ -1,0 +1,75 @@
+<section class="page" id="page-teacher-eval-workspace">
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>Human-in-the-Loop Evaluation Review</h1>
+            <p class="page-subtitle" id="workspace-subtitle">Reviewing High-Risk Evaluation</p>
+        </div>
+        <button class="btn btn-secondary" onclick="showPage('teacher-reviews')">← Back to Queue</button>
+    </header>
+
+    <div class="review-split">
+        <!-- Left Pane: Handwritten Script Image & OCR Text -->
+        <div class="review-pane">
+            <h3>📷 Handwritten Answer Script</h3>
+            <div class="review-image-container">
+                <img id="workspace-img" src="" alt="Handwritten script preview">
+            </div>
+            <h4 style="margin-top: 0.5rem;">Extracted Text (TrOCR)</h4>
+            <div style="background: var(--color-surface-2); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-family: monospace; white-space: pre-wrap; max-height: 200px; overflow-y: auto;" id="workspace-ocr-text">
+                Loading extracted text...
+            </div>
+            <div style="font-size: 0.85rem; color: var(--color-text-secondary);" id="workspace-ocr-conf">
+                OCR Confidence: —
+            </div>
+        </div>
+
+        <!-- Right Pane: Question, Reference Answer, Rubric, AI Evaluation & Risk -->
+        <div class="review-pane">
+            <div class="risk-alert-box" id="workspace-risk-box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong>AI Grading Risk: <span id="workspace-risk-label">HIGH</span></strong>
+                    <span id="workspace-risk-prob" style="font-weight: 600;">85% Error Risk</span>
+                </div>
+                <ul id="workspace-risk-factors" style="margin: 0.5rem 0 0 1.25rem; font-size: 0.85rem;"></ul>
+            </div>
+
+            <div>
+                <h4 style="margin-bottom: 0.25rem;">Question <span id="workspace-q-num"></span> (<span id="workspace-q-max"></span> Marks)</h4>
+                <p id="workspace-q-text" style="font-size: 0.92rem; color: var(--color-text);"></p>
+            </div>
+
+            <div>
+                <h4 style="margin-bottom: 0.25rem;">Reference Answer / Marking Scheme</h4>
+                <p id="workspace-ref-answer" style="font-size: 0.85rem; background: var(--color-surface-2); padding: 0.5rem; border-radius: var(--radius-sm); color: var(--color-text-secondary);"></p>
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center; background: #eef2ff; padding: 0.75rem; border-radius: var(--radius-sm);">
+                <div>
+                    <div style="font-size: 0.75rem; color: #4338ca; text-transform: uppercase; font-weight: 700;">AI Preliminary Mark</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #3730a3;" id="workspace-ai-mark">0.0</div>
+                </div>
+                <div style="margin-left: auto;">
+                    <div style="font-size: 0.75rem; color: #4338ca;">Semantic Match: <strong id="workspace-sim">0.0</strong></div>
+                    <div style="font-size: 0.75rem; color: #4338ca;">Rubric Coverage: <strong id="workspace-cov">0.0</strong></div>
+                </div>
+            </div>
+
+            <!-- Teacher Final Mark Form -->
+            <div style="border-top: 1px solid var(--color-border); padding-top: 1rem; margin-top: 0.5rem;">
+                <h3 style="margin-bottom: 0.75rem;">Teacher Final Decision</h3>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="workspace-final-mark-input">Final Awarded Mark (out of <span id="workspace-max-mark-hint"></span>):</label>
+                    <input type="number" id="workspace-final-mark-input" step="0.5" min="0" style="font-size: 1.1rem; font-weight: 700; padding: 0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="workspace-notes-input">Evaluation Notes / Rationale (optional):</label>
+                    <textarea id="workspace-notes-input" rows="2" placeholder="e.g. Approved with partial credit for light reaction definition"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn btn-secondary" id="btn-workspace-approve-ai">Approve AI Mark</button>
+                    <button class="btn btn-primary" id="btn-workspace-submit" style="flex: 1;">Submit Final Mark</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

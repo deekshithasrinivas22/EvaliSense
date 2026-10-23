@@ -1,0 +1,52 @@
+<section class="page" id="page-audit-logs">
+    <header class="page-header">
+        <h1>System Audit Trail</h1>
+        <p class="page-subtitle">Immutable record of all security-critical and examination management actions</p>
+    </header>
+
+    <div class="card">
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+                <label for="audit-entity-filter">Entity Type</label>
+                <select id="audit-entity-filter" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                    <option value="">All</option>
+                    <option value="user">User</option>
+                    <option value="exam">Exam</option>
+                    <option value="answer_script">Answer Script</option>
+                    <option value="question_paper">Question Paper</option>
+                    <option value="answer_key">Answer Key</option>
+                    <option value="teacher_assignment">Teacher Assignment</option>
+                    <option value="final_mark">Final Mark</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 150px;">
+                <label for="audit-action-filter">Action</label>
+                <select id="audit-action-filter" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                    <option value="">All</option>
+                    <option value="LOGIN">Login</option>
+                    <option value="UPLOAD_QUESTION_PAPER">Upload Question Paper</option>
+                    <option value="UPLOAD_ANSWER_KEY">Upload Answer Key</option>
+                    <option value="APPROVE_ANSWER_KEY">Approve Answer Key</option>
+                    <option value="UPLOAD_SCRIPT">Upload Script</option>
+                    <option value="SUBMIT_REVIEW">Submit Review</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary" onclick="loadAuditLogs()">🔍 Filter</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="table-audit-logs">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="5">Loading audit logs...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

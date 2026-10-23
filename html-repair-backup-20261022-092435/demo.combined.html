@@ -1,0 +1,80 @@
+<section class="page" id="page-model">
+    <header class="page-header">
+        <h1>Model Information & Performance</h1>
+        <p class="page-subtitle">Risk prediction model architecture, feature weights, and evaluation metrics</p>
+    </header>
+    <div class="card" id="model-info-card">
+        <div id="model-info-content"><p class="empty-state">Loading model information...</p></div>
+    </div>
+</section>
+<section class="page" id="page-evaluate">
+    <header class="page-header">
+        <h1>Interactive AI Pipeline Demo</h1>
+        <p class="page-subtitle">Preserved original step-by-step TrOCR, rubric scoring and risk predictor pipeline</p>
+    </header>
+
+    <div class="card" id="upload-section">
+        <h2>Step 1 — Upload Handwritten Answer</h2>
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📤</div>
+            <p>Drag & drop a handwritten answer file here</p>
+            <p class="upload-hint">Supports: Images (PNG, JPG, JPEG, BMP, TIF), PDF, or TXT files</p>
+            <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.bmp,.tif,.tiff,.pdf,.txt" hidden>
+        </div>
+        <div class="upload-preview" id="upload-preview" style="display: none;">
+            <img id="preview-image" alt="Uploaded handwritten answer" style="max-width: 100%; max-height: 300px;">
+            <p id="preview-filename"></p>
+            <div id="text-file-preview" style="display: none; background: var(--color-surface-2); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-family: monospace; white-space: pre-wrap; max-height: 250px; overflow-y: auto; font-size: 0.9rem; margin-top: 0.5rem;"></div>
+        </div>
+    </div>
+
+    <div class="card" id="preprocess-section" style="display: none;">
+        <h2>Step 2 — Preprocessing</h2>
+        <button class="btn btn-primary" id="btn-preprocess">Run Preprocessing</button>
+        <div class="result-box" id="preprocess-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="htr-section" style="display: none;">
+        <h2>Step 3 — Handwritten Text Recognition (TrOCR)</h2>
+        <button class="btn btn-primary" id="btn-recognize">Run HTR</button>
+        <div class="result-box" id="htr-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="evaluate-section" style="display: none;">
+        <h2>Step 4 — Rubric-Based Evaluation</h2>
+        <div class="rubric-input">
+            <label for="rubric-textarea">Rubric (JSON):</label>
+            <textarea id="rubric-textarea" rows="10" placeholder="Paste rubric JSON here..."></textarea>
+            <button class="btn btn-secondary" id="btn-load-sample-rubric" style="align-self: flex-start;">Load Sample Rubric</button>
+        </div>
+        <button class="btn btn-primary" id="btn-evaluate" style="margin-top: 1rem;">Run Evaluation</button>
+        <div class="result-box" id="eval-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="risk-section" style="display: none;">
+        <h2>Step 5 — Grading Error Risk Prediction</h2>
+        <button class="btn btn-primary" id="btn-predict-risk">Predict Risk</button>
+        <div class="result-box" id="risk-result" style="display: none;"></div>
+    </div>
+
+    <div class="card" id="review-section-inline" style="display: none;">
+        <h2>Step 6 — Examiner Review</h2>
+        <div class="review-form">
+            <div class="review-summary" id="review-summary"></div>
+            <div class="form-group">
+                <label for="examiner-mark-input">Final Examiner Mark:</label>
+                <input type="number" id="examiner-mark-input" step="0.5" min="0">
+                <span id="max-mark-display"></span>
+            </div>
+            <div class="form-group">
+                <label for="examiner-notes-input">Examiner Notes (optional):</label>
+                <textarea id="examiner-notes-input" rows="3"></textarea>
+            </div>
+            <div class="review-actions">
+                <button class="btn btn-approve" id="btn-approve">Approve AI Mark</button>
+                <button class="btn btn-primary" id="btn-submit-review">Submit Final Mark</button>
+            </div>
+        </div>
+        <div class="result-box" id="review-result" style="display: none;"></div>
+    </div>
+</section>

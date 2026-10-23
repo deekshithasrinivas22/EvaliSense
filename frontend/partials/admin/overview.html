@@ -1,0 +1,38 @@
+<section class="page" id="page-hod-overview">
+    <header class="page-header">
+        <h1>HOD Academic Management Dashboard</h1>
+        <p class="page-subtitle">Department overview, examination pipeline metrics & teacher workload distribution</p>
+    </header>
+
+    <div class="stats-grid" id="hod-metrics-grid">
+        <div class="stat-card"><div class="stat-value" id="m-students">0</div><div class="stat-label">Total Students</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-teachers">0</div><div class="stat-label">Total Teachers</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-subjects">0</div><div class="stat-label">Active Subjects</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-exams">0</div><div class="stat-label">Examinations</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-uploaded">0</div><div class="stat-label">Scripts Uploaded</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-risky" style="color: var(--color-danger);">0</div><div class="stat-label">High-Risk Answers</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-pending">0</div><div class="stat-label">Pending Reviews</div></div>
+        <div class="stat-card"><div class="stat-value" id="m-completed" style="color: var(--color-success);">0</div><div class="stat-label">Completed Reviews</div></div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Teacher Workload Balance</h2>
+            <button class="btn btn-primary" id="btn-hod-auto-assign">⚡ Auto-Balance Risky Answers</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-teacher-workload">
+                <thead>
+                    <tr>
+                        <th>Teacher Name</th>
+                        <th>Username</th>
+                        <th>Pending Reviews</th>
+                        <th>Completed Reviews</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="5" class="empty-state">Loading teacher workloads...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

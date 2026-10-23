@@ -1,0 +1,51 @@
+<section class="page" id="page-hod-users">
+    <header class="page-header">
+        <h1>User & Role Administration</h1>
+        <p class="page-subtitle">Manage faculty, scanning staff, custom roles, and security access</p>
+    </header>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>System Users</h2>
+            <button class="btn btn-primary" onclick="openModal('modal-add-user')">+ Add New User</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-users">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Employee ID</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="8">Loading users...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Roles & Permissions</h2>
+            <button class="btn btn-secondary" onclick="openModal('modal-add-role')">+ Create Custom Role</button>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="table-roles">
+                <thead>
+                    <tr>
+                        <th>Role Name</th>
+                        <th>Description</th>
+                        <th>Role Type</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="5">Loading roles...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>

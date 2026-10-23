@@ -1,0 +1,81 @@
+<section class="page active" id="page-dashboard">
+    <header class="page-header">
+        <h1>Examination Evaluation System</h1>
+        <p class="page-subtitle">Role-Based Academic Platform with TrOCR HTR, Rubric Scoring & ML Risk Prediction</p>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card" id="stat-api-status">
+            <div class="stat-value">✓ Online</div>
+            <div class="stat-label">System Status</div>
+        </div>
+        <div class="stat-card" id="stat-active-role">
+            <div class="stat-value" id="display-active-role">Guest</div>
+            <div class="stat-label">Active Role</div>
+        </div>
+        <div class="stat-card" id="stat-model-status">
+            <div class="stat-value">Loaded</div>
+            <div class="stat-label">Risk Predictor</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <h2>System Overview & Roles</h2>
+        <p style="margin-bottom: 1rem;">EvaliSense is an AI-assisted handwritten examination evaluation management system with full human-in-the-loop review. Sign in using your role credentials below to access role-specific workflows.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <h3 style="color: #4338ca;">🏛️ HOD / Administrator</h3>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Manages users, custom roles, departments, sections, students, subjects, exams, answer keys, rubrics, and inspects results.</p>
+                <button class="btn btn-secondary" onclick="quickLogin('admin', 'Admin@123')">Sign in as HOD</button>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <h3 style="color: #15803d;">👩‍🏫 Teacher / Examiner</h3>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Inspects assigned high-risk answers side-by-side with handwriting image, OCR text, rubric, and submits final marks.</p>
+                <button class="btn btn-secondary" onclick="quickLogin('teacher1', 'Teacher@123')">Sign in as Teacher</button>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem;">
+                <h3 style="color: #b45309;">📠 Scanner Operator</h3>
+                <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin: 0.5rem 0 1rem 0;">Uploads answer sheets, monitors image quality validation, blur detection, OCR confidence, and manages rescans.</p>
+                <button class="btn btn-secondary" onclick="quickLogin('scanner1', 'Scanner@123')">Sign in as Scanner</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card workflow-card" style="margin-top: 1.5rem;">
+        <h2>End-to-End Evaluation Workflow</h2>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-label">Upload Script</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-label">Quality Check</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-label">TrOCR HTR</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-label">Rubric AI Score</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-label">Risk Model</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+                <div class="step-number">6</div>
+                <div class="step-label">Teacher Review</div>
+            </div>
+        </div>
+    </div>
+</section>
