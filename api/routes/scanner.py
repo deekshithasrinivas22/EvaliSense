@@ -12,6 +12,9 @@ from api.services.scanning_service import resolve_scan_issue
 
 router = APIRouter(prefix="/api/scanner", tags=["Scanner Operations"])
 
+from api.routes.scripts import upload_script
+router.add_api_route('/scripts/upload', upload_script, methods=['POST'], response_model=AnswerScriptResponse)
+
 
 @router.get("/scripts", response_model=list[AnswerScriptResponse])
 def get_scanner_scripts(

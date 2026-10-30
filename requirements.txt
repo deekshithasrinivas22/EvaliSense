@@ -24,7 +24,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 sqlalchemy
-pyjwt
+pyjwt[crypto]
 argon2-cffi
 
 # ─── Testing ───

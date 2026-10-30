@@ -93,7 +93,7 @@ class HandwritingLineSegmenter:
         if rules is not None:
             for x1, y1, x2, y2 in rules.reshape(-1, 4):
                 dx, dy = abs(int(x2-x1)), abs(int(y2-y1))
-                if dx > 12 * max(1,dy) or dy > 12 * max(1,dx):
+                if (dx > gray.shape[1] * .65 and dx > 12 * max(1,dy)) or dy > 12 * max(1,dx):
                     cv2.line(ink, (x1,y1), (x2,y2), 0, 11)
         ruling_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (max(40, gray.shape[1] // 2), 1))
         ink = cv2.subtract(ink, cv2.morphologyEx(ink, cv2.MORPH_OPEN, ruling_kernel))

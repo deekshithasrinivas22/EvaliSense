@@ -668,6 +668,51 @@ class ScriptPage(Base):
         }
 
 
+class QuestionPaperFile(Base):
+    """Exam-specific reviewed paper versions, separate from legacy uploads."""
+    __tablename__ = "question_paper_files"
+    id = Column(Integer, primary_key=True)
+    exam_id = Column(Integer, ForeignKey("exams.id"), nullable=False, index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size = Column(Integer, default=0, nullable=False)
+    page_count = Column(Integer, default=1, nullable=False)
+    question_count = Column(Integer, default=0, nullable=False)
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    status = Column(String(30), default="ACTIVE", nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def to_dict(self):
+        return {"id": self.id, "exam_id": self.exam_id, "uploaded_by": self.uploaded_by,
+                "original_filename": self.original_filename, "file_name": self.original_filename,
+                "file_size": self.file_size, "page_count": self.page_count,
+                "question_count": self.question_count, "version": self.version,
+                "is_active": self.is_active, "status": self.status,
+                "uploaded_at": self.uploaded_at.isoformat(), "created_at": self.uploaded_at.isoformat()}
+
+
+class AnswerKeyFile(Base):
+    """Versioned official marking documents used by the exam management API."""
+    __tablename__ = "answer_key_files"
+    id = Column(Integer, primary_key=True)
+    exam_id = Column(Integer, ForeignKey("exams.id"), nullable=False, index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    status = Column(String(30), default="ACTIVE", nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def to_dict(self):
+        return {"id": self.id, "exam_id": self.exam_id, "uploaded_by": self.uploaded_by,
+                "original_filename": self.original_filename, "file_name": self.original_filename,
+                "version": self.version, "is_active": self.is_active, "status": self.status,
+                "uploaded_at": self.uploaded_at.isoformat(), "created_at": self.uploaded_at.isoformat()}
+
+
 class AuditLog(Base):
     """Immutable audit trail for security-critical and examination actions."""
     __tablename__ = "audit_logs"

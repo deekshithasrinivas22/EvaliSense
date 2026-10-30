@@ -11,6 +11,7 @@ from .pipeline import HTRPipeline
 from .result import HTRResult, RecognizedLine
 from .recognizer import HandwritingRecognizer
 from .ensemble import recognize_written
+from .hybrid_recognizer import optical_mcq
 
 def fields(image):
     gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY);mask=(gray<210).astype(np.uint8)
@@ -132,12 +133,29 @@ class LocalDocumentPipeline(HTRPipeline):
             footer=bool(region.bounding_box[1]>prepared.shape[0]*.93 and re.fullmatch(r'/?\d*\s*/?\s*total\s*\d+',text,re.I))
             pair=fields(region.image) if i in clustered else None
             if pair:
-                number,ns,nmin=self.read(pair[0],set('0123456789'))
+                number,ns,nmin=self.read(pair[0],set('0123456789.():- '))
+                # The crop includes the separator. Excluding punctuation forces
+                # its pixels into a digit and artificially depresses support.
+                number = number.strip().strip('.():- ').strip()
                 option,os,omin=self.read(pair[1],set('ABCDEFGHabcdefgh'))
-                if number and len(number)<=3 and len(option)==1:
+                if number.isdigit() and len(number)<=3 and int(number)>0 and len(option)==1:
                     text=f'{number}. {option.upper()}';support=min(ns,os)
-                    if min(nmin,omin)<.80:reason='The question number or option has weak visual support. Confirm the candidate against the scan.'
+                    # Alphabet-restricted decoding can force an unrelated glyph
+                    # into a digit. Compare with the unrestricted optical read;
+                    # never infer a missing number from neighbouring answers.
+                    whole_pair = optical_mcq(candidate['text'])
+                    field_pair = (int(number), option.upper())
+                    if whole_pair and whole_pair != field_pair:
+                        reason='Whole-line and field readings disagree on the question number or option. Confirm against the scan.'
+                    elif min(nmin,omin)<.80 and not (whole_pair == field_pair and candidate['minimum'] >= .8):
+                        reason='The question number or option has weak visual support. Confirm the candidate against the scan.'
                     alternatives.update(number_support=ns,option_support=os)
+                    if reason:
+                        independent = self.handwriting.recognize(cv2.copyMakeBorder(
+                            region.image,8,8,8,8,cv2.BORDER_CONSTANT,value=(255,255,255)))
+                        alternatives['handwriting'] = independent.text
+                        if optical_mcq(independent.text) == field_pair and (independent.confidence or 0) >= .8 and min(ns,os) >= .5:
+                            reason = None
                 else:reason='The short answer fields could not be separated reliably.'
             elif i in clustered:
                 reason='The MCQ number and option could not be separated reliably. Confirm the visible entry.'

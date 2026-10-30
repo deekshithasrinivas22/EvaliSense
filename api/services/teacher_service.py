@@ -162,7 +162,7 @@ def submit_teacher_review(
     if assignment.teacher_id != teacher.id and user_role != "HOD":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. You can only review assignments assigned to you.",
+            detail="Access forbidden. You can only review assignments assigned to you.",
         )
 
     answer = db.query(AnswerAnswer).filter(AnswerAnswer.id == assignment.answer_id).first()

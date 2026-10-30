@@ -18,8 +18,10 @@ from api.routes.notifications import router as notifications_router
 from api.routes.analytics import router as analytics_router
 from api.routes.teacher_documents import router as teacher_documents_router
 from api.routes.audit_logs import router as audit_logs_router
+from api.routes.exam_documents import router as exam_documents_router
 
 all_routers = [
+    exam_documents_router,
     auth_router,
     roles_router,
     users_router,

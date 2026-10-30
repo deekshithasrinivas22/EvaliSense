@@ -158,6 +158,14 @@ def parse_answer_key(text: str) -> dict:
 
 
 def extract_answer_key_text(content: bytes, suffix: str) -> str:
+    if suffix == '.docx':
+        from api.services.question_extraction_service import extract_text_from_docx_bytes, docx_has_images
+        try:
+            if docx_has_images(content):
+                raise HTTPException(422, 'Export this Word answer key as PDF so embedded image answers are not skipped.')
+            return extract_text_from_docx_bytes(content)
+        except ValueError as error:
+            raise HTTPException(400, str(error))
     if suffix == '.txt':
         try:
             return content.decode('utf-16' if content.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig')
@@ -173,14 +181,20 @@ def extract_answer_key_text(content: bytes, suffix: str) -> str:
                 for number, page in enumerate(doc, 1):
                     text = page.get_text(sort=True)
                     if not text.strip() and page.get_images():
-                        raise HTTPException(400, f'Page {number} is scanned without readable text. Upload an OCR text PDF or TXT answer key.')
+                        from api.services.pdf_service import calculate_render_scale
+                        from api.services.question_extraction_service import extract_text_from_image_bytes
+                        scale, *_ = calculate_render_scale(page.rect)
+                        pixels = page.get_pixmap(matrix=fitz.Matrix(scale,scale), alpha=False)
+                        text = extract_text_from_image_bytes(pixels.tobytes('png'))
+                        if not text.strip():
+                            raise HTTPException(422, f'Page {number} could not be read. Supply a clearer scan or a TXT transcription.')
                     pages.append(text)
                 return '\n'.join(pages)
         except HTTPException:
             raise
         except Exception:
             raise HTTPException(400, 'The PDF could not be read. Check that it is valid and unlocked.')
-    raise HTTPException(400, 'Answer keys currently support PDF and TXT files.')
+    raise HTTPException(400, 'Answer keys support PDF, TXT and Word (.docx) files.')
 
 
 def build_answer_key_router(storage_root: Path) -> APIRouter:
@@ -195,8 +209,8 @@ def build_answer_key_router(storage_root: Path) -> APIRouter:
             raise HTTPException(400, 'Select a valid examination before uploading.')
         filename = (file.filename or '').replace('\\', '/').rsplit('/', 1)[-1]
         suffix = Path(filename).suffix.lower()
-        if suffix not in {'.pdf', '.txt'}:
-            raise HTTPException(400, 'Answer keys support PDF and TXT files.')
+        if suffix not in {'.pdf', '.txt', '.docx'}:
+            raise HTTPException(400, 'Answer keys support PDF, TXT and Word (.docx) files.')
         content = await file.read(50 * 1024 * 1024 + 1)
         if not content:
             raise HTTPException(400, 'The answer key file is empty.')
@@ -217,7 +231,8 @@ def build_answer_key_router(storage_root: Path) -> APIRouter:
         folder = storage_root / file_id
         folder.mkdir(parents=True)
         result = {'file_id': file_id, 'exam_id': exam_id, 'original_filename': filename,
-                  'file_size': len(content), 'mime_type': 'application/pdf' if suffix == '.pdf' else 'text/plain',
+                  'file_size': len(content), 'mime_type': {'.pdf':'application/pdf', '.txt':'text/plain',
+                      '.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}[suffix],
                   'extracted_text': text, 'answers': parsed['answers'], 'parse_warnings': parsed['warnings'],
                   'download_url': f'/api/answer-key-files/{file_id}'}
         try:
@@ -236,7 +251,7 @@ def build_answer_key_router(storage_root: Path) -> APIRouter:
         try:
             metadata = json.loads((folder / 'metadata.json').read_text(encoding='utf-8'))
             suffix = metadata['suffix']
-            if suffix not in {'.pdf', '.txt'}:
+            if suffix not in {'.pdf', '.txt', '.docx'}:
                 raise ValueError('Invalid stored suffix')
             path = folder / ('original' + suffix)
             if not path.is_file():

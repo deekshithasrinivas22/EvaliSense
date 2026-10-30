@@ -16,6 +16,10 @@ from argon2.exceptions import VerifyMismatchError, VerificationError
 from config import config
 
 _hasher = PasswordHasher()
+_firebase_keys = jwt.PyJWKClient(
+    'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com',
+    cache_keys=True, timeout=5,
+)
 
 
 def hash_password(plain_password: str) -> str:
@@ -53,21 +57,17 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
     except Exception:
         pass
 
-    # 2. Try decoding as Firebase ID token
+    # 2. Firebase identity is trusted only after signature, audience, issuer and
+    # expiry verification. An unverified payload must never authorize a user.
     try:
-        unverified = jwt.decode(token, options={"verify_signature": False})
-        iss = unverified.get("iss", "")
-        aud = unverified.get("aud", "")
-        if "securetoken.google.com" in iss or aud == "evalisense" or unverified.get("firebase"):
-            user_id = unverified.get("user_id") or unverified.get("sub")
-            email = unverified.get("email")
-            return {
-                "sub": user_id,
-                "user_id": user_id,
-                "email": email,
-                "role": unverified.get("role"),
-                "is_firebase": True,
-            }
-        return unverified
+        if jwt.get_unverified_header(token).get('alg') != 'RS256':
+            return None
+        key = _firebase_keys.get_signing_key_from_jwt(token).key
+        verified = jwt.decode(token, key, algorithms=['RS256'], audience='evalisense',
+                              issuer='https://securetoken.google.com/evalisense',
+                              options={'require': ['exp', 'iat', 'sub']})
+        if not verified.get('email_verified'):
+            return None
+        return {**verified, 'is_firebase': True}
     except Exception:
         return None

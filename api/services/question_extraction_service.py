@@ -37,7 +37,7 @@ from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-ALLOWED_QP_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".txt"}
+ALLOWED_QP_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".txt", ".docx"}
 MAX_QP_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
 
 # Concurrency-safe model singletons for efficient OCR
@@ -99,6 +99,9 @@ def validate_question_paper_file(file: UploadFile, content: bytes) -> tuple[bool
                 doc.close()
                 return False, "PDF document contains no pages.", {}
             meta["page_count"] = doc.page_count
+            if doc.page_count > config.max_pdf_pages:
+                doc.close()
+                return False, f'PDF exceeds maximum page count ({config.max_pdf_pages}).', {}
             doc.close()
         except Exception as exc:
             return False, f"Corrupted or invalid PDF file: {str(exc)}", {}
@@ -112,6 +115,18 @@ def validate_question_paper_file(file: UploadFile, content: bytes) -> tuple[bool
             return False, "Corrupted image file or unrecognized image header.", {}
     elif ext == ".txt":
         meta["page_count"] = 1
+    elif ext == '.docx':
+        try:
+            extract_text_from_docx_bytes(content)
+        except ValueError as error:
+            return False, str(error), {}
+        meta['page_count'] = 1
+    else:
+        import cv2
+        import numpy as np
+        if cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_COLOR) is None:
+            return False, 'Corrupted or unreadable image.', {}
+        meta['page_count'] = 1
 
     return True, "Validation successful.", meta
 
@@ -140,7 +155,8 @@ def extract_text_from_pdf(
             used_ocr = False
             # If selectable text is missing or extremely short (< 20 characters) and OCR is enabled,
             # render page safely and perform OCR using cached pipeline
-            if len(text) < 20 and ocr_fallback:
+            from api.services.pdf_service import page_needs_ocr
+            if page_needs_ocr(page, text) and ocr_fallback:
                 try:
                     logger.info("Page %d has minimal selectable text; attempting OCR fallback...", page_num)
                     scale, out_w, out_h, eff_dpi = calculate_render_scale(page.rect, target_dpi=200)
@@ -190,7 +206,7 @@ def extract_text_from_image_bytes(image_bytes: bytes) -> str:
 
     preprocessor = get_cached_image_preprocessor()
     gray = preprocessor.to_grayscale(img)
-    enhanced = preprocessor.enhance_contrast(gray)
+    enhanced = img  # Preserve strokes; do not amplify reverse-side writing.
 
     pipeline = get_cached_htr_pipeline()
     result = pipeline.recognize_image(enhanced)
@@ -205,6 +221,10 @@ def extract_text_from_docx_bytes(content: bytes) -> str:
     try:
         with io.BytesIO(content) as bio:
             with zipfile.ZipFile(bio) as z:
+                if sum(item.file_size for item in z.infolist()) > 50 * 1024 * 1024:
+                    raise ValueError('Word document expands beyond the safe size limit.')
+                if z.getinfo('word/document.xml').file_size > 10 * 1024 * 1024:
+                    raise ValueError('Word document text exceeds the safe size limit.')
                 xml_content = z.read("word/document.xml")
                 tree = ET.fromstring(xml_content)
                 paragraphs = []
@@ -218,8 +238,13 @@ def extract_text_from_docx_bytes(content: bytes) -> str:
                         paragraphs.append("".join(texts))
                 return "\n".join(paragraphs)
     except Exception as exc:
-        logger.warning("DOCX extraction error: %s", exc)
-        return ""
+        raise ValueError(f'Invalid or unreadable DOCX document: {exc}') from exc
+
+
+def docx_has_images(content: bytes) -> bool:
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        return any(name.startswith('word/media/') for name in archive.namelist())
 
 
 def extract_text_from_document(
@@ -230,7 +255,7 @@ def extract_text_from_document(
     ext = Path(file.filename or "").suffix.lower()
     if ext == ".pdf":
         return extract_text_from_pdf(content)
-    elif ext in {".png", ".jpg", ".jpeg"}:
+    elif ext in {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}:
         text = extract_text_from_image_bytes(content)
         warnings = []
         if not text.strip():
@@ -245,6 +270,8 @@ def extract_text_from_document(
     elif ext == ".docx":
         text = extract_text_from_docx_bytes(content)
         warnings = []
+        if docx_has_images(content):
+            warnings.append('Word embedded images are not text. Export the document as PDF to recognize image content; verify that no questions are missing before import.')
         if not text.strip():
             warnings.append("No text could be extracted from the uploaded DOCX document.")
         return text, [{"page_number": 1, "text": text, "used_ocr": False}], warnings
@@ -659,9 +686,7 @@ def parse_questions_from_text(raw_text: str) -> tuple[list[dict[str, Any]], str,
     seen: set[int] = set()
     for q in questions:
         if q["question_number"] in seen:
-            new_num = max(seen) + 1
-            q["warnings"].append(f"Auto-renumbered to Question #{new_num} to avoid duplication.")
-            q["question_number"] = new_num
+            q["warnings"].append("Repeated source question number. Review the section and assign a unique import number before confirming.")
         seen.add(q["question_number"])
 
     missing_count = sum(1 for q in questions if q.get("max_marks") is None)

@@ -8,6 +8,12 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.test-deps/
+*-tests.txt
+ocr-baseline.txt
+ocr-after.txt
+mcq-diagnostic.txt
+ocr-verified.txt
 
 # Virtual environment
 .venv/

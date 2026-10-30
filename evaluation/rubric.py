@@ -7,6 +7,7 @@ data model and provides loading / validation helpers.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -44,10 +45,13 @@ class Rubric:
         warnings: list[str] = []
         if not self.question.strip():
             warnings.append("Rubric question is empty.")
-        if self.max_marks <= 0:
+        if not math.isfinite(self.max_marks) or self.max_marks <= 0:
             warnings.append("max_marks must be positive.")
         if not self.criteria:
             warnings.append("Rubric has no criteria.")
+        if any(not math.isfinite(c.marks) or c.marks <= 0 or not c.description.strip() or not c.id.strip()
+               for c in self.criteria):
+            warnings.append("Every criterion needs an ID, description and finite positive marks.")
         criteria_sum = sum(c.marks for c in self.criteria)
         if abs(criteria_sum - self.max_marks) > 0.01:
             warnings.append(
@@ -83,7 +87,7 @@ class Rubric:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Rubric":
         criteria = [
-            RubricCriterion(**c) for c in data.get("criteria", [])
+            RubricCriterion(**{**c, 'marks': float(c['marks'])}) for c in data.get("criteria", [])
         ]
         return cls(
             question=data.get("question", ""),

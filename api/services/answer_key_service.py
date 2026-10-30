@@ -73,6 +73,52 @@ def save_and_register_answer_key(
     """Save answer key file, track version, set active, and update structured questions."""
     check_exam_authorization(db, user, exam)
 
+    # Validate the complete structured update before changing active versions or
+    # storing files. Partial keys may update existing questions, never invent
+    # question text, marks or reference answers for unknown question numbers.
+    if file and Path(file.filename or '').suffix.lower() == '.json' and not questions_json:
+        try:
+            questions_json = file.file.read(MAX_ANSWER_KEY_SIZE + 1).decode('utf-8')
+            file.file.seek(0)
+        except UnicodeError:
+            raise HTTPException(400, 'The JSON answer key must use UTF-8.')
+    if questions_json:
+        try:
+            from evaluation import Rubric
+            import math
+            data = json.loads(questions_json)
+            rows = data if isinstance(data, list) else data['questions']
+            if not isinstance(rows, list) or not 1 <= len(rows) <= 250:
+                raise ValueError('Provide between 1 and 250 questions.')
+            normalized, seen = [], set()
+            for row in rows:
+                number = row.get('question_number', row.get('number'))
+                if not isinstance(number, int) or isinstance(number, bool) or number < 1 or number in seen:
+                    raise ValueError('Question numbers must be unique positive integers.')
+                seen.add(number)
+                existing = db.query(ExamQuestion).filter_by(exam_id=exam.id, question_number=number).first()
+                text = row.get('question_text', row.get('text', existing.question_text if existing else ''))
+                marks = float(row.get('max_marks', existing.max_marks if existing else 0))
+                if not text.strip() or not math.isfinite(marks) or marks <= 0:
+                    raise ValueError('New questions require their actual text and positive finite marks.')
+                reference = row.get('reference_answer', existing.reference_answer if existing else '') or ''
+                rubric = row.get('rubric_json')
+                if not rubric and 'criteria' in row:
+                    rubric = {'question':text, 'max_marks':marks, 'reference_answer':reference, 'criteria':row['criteria']}
+                if rubric:
+                    value = json.loads(rubric) if isinstance(rubric, str) else rubric
+                    parsed = Rubric.from_dict(value)
+                    if parsed.validate() or abs(parsed.max_marks - marks) > .01:
+                        raise ValueError('Invalid rubric or rubric maximum differs from question marks.')
+                    rubric = json.dumps(value)
+                elif existing and existing.max_marks == marks:
+                    rubric = existing.rubric_json
+                normalized.append({'question_number':number, 'question_text':text.strip(),
+                                   'max_marks':marks, 'reference_answer':reference, 'rubric_json':rubric})
+            questions_json = json.dumps(normalized)
+        except (ValueError, TypeError, KeyError, AttributeError) as error:
+            raise HTTPException(400, f'Invalid structured answer key: {error}')
+
     # Calculate next version
     existing_keys = (
         db.query(AnswerKeyFile)
@@ -93,6 +139,8 @@ def save_and_register_answer_key(
 
     filename = "structured_key.json"
     file_path = str(key_dir / f"key_v{next_version}_{filename}")
+    if not file:
+        Path(file_path).write_text(questions_json or '', encoding='utf-8')
 
     if file and file.filename:
         ext = Path(file.filename).suffix.lower()
@@ -150,7 +198,7 @@ def save_and_register_answer_key(
                     .first()
                 )
                 q_text = q_data.get("question_text") or q_data.get("text") or f"Question {q_num}"
-                max_m = float(q_data.get("max_marks", 10.0))
+                max_m = float(q_data['max_marks'])
                 ref_ans = q_data.get("reference_answer", "")
                 rubric_val = q_data.get("rubric_json")
                 if isinstance(rubric_val, dict):
@@ -178,11 +226,11 @@ def save_and_register_answer_key(
                     q_rec.question_text = q_text
                     q_rec.max_marks = max_m
                     q_rec.reference_answer = ref_ans
-                    if rubric_val:
-                        q_rec.rubric_json = rubric_val
+                    q_rec.rubric_json = rubric_val
                     q_rec.updated_at = datetime.utcnow()
         except Exception as e:
-            logger.warning("Could not auto-parse structured questions from answer key: %s", e)
+            db.rollback()
+            raise HTTPException(400, f'Could not save structured answer key: {e}')
 
     db.commit()
     db.refresh(key_record)

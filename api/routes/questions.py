@@ -69,6 +69,8 @@ def create_exam_question(
             r_data = json.loads(req.rubric_json)
             rubric = Rubric.from_dict(r_data)
             warnings = rubric.validate()
+            if warnings or abs(rubric.max_marks - req.max_marks) > .01:
+                raise ValueError('; '.join(warnings) or 'Rubric maximum must match question maximum.')
         except Exception as exc:
             raise HTTPException(status_code=400, detail=f"Invalid rubric JSON: {exc}")
 
@@ -101,6 +103,10 @@ def update_question(
         _verify_exam_access(db, current_user, question.exam)
 
     if req.question_number is not None:
+        duplicate = db.query(ExamQuestion).filter(ExamQuestion.exam_id == question.exam_id,
+            ExamQuestion.question_number == req.question_number, ExamQuestion.id != question.id).first()
+        if duplicate:
+            raise HTTPException(409, 'This examination already has that question number.')
         question.question_number = req.question_number
     if req.question_text is not None:
         question.question_text = req.question_text.strip()
@@ -110,10 +116,19 @@ def update_question(
         question.reference_answer = req.reference_answer.strip()
     if req.rubric_json is not None:
         try:
-            json.loads(req.rubric_json)
+            from evaluation import Rubric
+            rubric = Rubric.from_dict(json.loads(req.rubric_json))
+            warnings = rubric.validate()
+            if warnings or abs(rubric.max_marks - question.max_marks) > .01:
+                raise ValueError('; '.join(warnings) or 'Rubric maximum must match question maximum.')
             question.rubric_json = req.rubric_json
         except Exception as exc:
             raise HTTPException(status_code=400, detail=f"Invalid rubric JSON: {exc}")
+    elif req.max_marks is not None and question.rubric_json:
+        from evaluation import Rubric
+        rubric = Rubric.from_dict(json.loads(question.rubric_json))
+        if abs(rubric.max_marks - question.max_marks) > .01:
+            raise HTTPException(400, 'Update the rubric together with the question maximum marks.')
 
     db.commit()
     db.refresh(question)

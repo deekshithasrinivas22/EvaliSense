@@ -3,6 +3,16 @@ import re
 import cv2
 import numpy as np
 
+def readings_agree(handwriting, optical, handwriting_support, optical_support):
+    """Independent readers may corroborate a line, never repair its spelling.
+
+    Compare words, numeric values and mathematical operators. Cosmetic sentence
+    punctuation can differ, but conflicting words, digits or signs cannot.
+    """
+    normalize = lambda text: re.findall(r'\d+(?:[.,]\d+)*|[^\W\d_]+|[=+<>/%-]', text.casefold())
+    return bool(normalize(handwriting) and normalize(handwriting) == normalize(optical)
+                and handwriting_support >= .5 and optical_support >= .8)
+
 def optical_details(pipeline,image):
     h,w=image.shape[:2];width=max(8,int(np.ceil(w*48/h)))
     data=cv2.resize(image,(width,48)).astype(np.float32)/127.5-1
@@ -67,14 +77,17 @@ def recognize_written(pipeline,recognizer,image):
     if prefix:candidate=f'{prefix[0]}. '+candidate
     confidence=handwriting.confidence or 0.
     reason=None
-    if confidence<.75:
+    agreement = readings_agree(handwriting.text, whole['text'] if not prefix else
+                              re.sub(r'^\s*\d{1,3}[ .:)]*', '', whole['text']),
+                              confidence, whole['mean'])
+    if confidence<.75 and not agreement:
         candidate=whole['text']
         # A truncated full-line read can be recovered by smaller optical crops.
         if len(chunk_text)>len(candidate)*1.4 and min((piece['mean'] for piece in pieces),default=0)>.85:candidate=chunk_text
         reason='The local readers could not confirm this line. Compare the candidate with the scan.'
     # Two crops of the same optical model are correlated evidence. Do not
     # let their shared spelling errors overrule the handwriting reader.
-    if confidence<.85 and not reason:
+    if confidence<.85 and not reason and not agreement:
         reason='The handwriting reading has limited support; compare it with the original image.'
     if prefix and prefix[1]<.8:reason='The written-answer question number needs confirmation.'
     if has_crossout(image):reason='This line contains crossed-out or ruled-through text. Confirm which words belong to the final answer.'

@@ -37,7 +37,8 @@ def test_e2e_complete_academic_and_evaluation_cycle(client, monkeypatch):
     assert resp_root.status_code == 200
     assert "EvaliSense" in resp_root.text
     assert 'href="/static/style.css"' in resp_root.text
-    assert 'src="/static/app.js"' in resp_root.text
+    import re
+    assert re.search(r'src="/static/app\.js(?:\?[^" ]*)?"', resp_root.text)
 
     resp_js = client.get("/static/app.js")
     assert resp_js.status_code == 200
@@ -123,6 +124,14 @@ def test_e2e_complete_academic_and_evaluation_cycle(client, monkeypatch):
     assert upload_res.json()["status"] == "UPLOADED"
 
     # ─── 5. AI Pipeline Execution ───
+    # Test persistence and examiner workflow deterministically. Real OCR model
+    # accuracy is checked separately with scripts/verify_sample_ocr.py.
+    from htr.result import HTRResult, RecognizedLine
+    from types import SimpleNamespace
+    recognized_text = 'Sampling theorem fs >= 2 fmax Nyquist frequency aliasing'
+    monkeypatch.setattr(ai_service, 'get_htr_pipeline', lambda: SimpleNamespace(
+        recognize_path=lambda *args, **kwargs: HTRResult(recognized_text,
+            [RecognizedLine(1, recognized_text, .95)], .95, {})))
     # Simulate high grading risk to trigger the workload-balanced teacher review flow
     original_risk_model = ai_service.get_risk_model()
     if original_risk_model is not None:
@@ -173,6 +182,11 @@ def test_e2e_complete_academic_and_evaluation_cycle(client, monkeypatch):
     )
     assert review_submit.status_code == 200
     assert review_submit.json()["final_mark"]["final_mark"] == 9.0
+    # Reprocessing or replacing a reviewed script must not erase the decision.
+    assert client.post(f'/api/scripts/{script_id}/evaluate',headers=scanner_headers).status_code == 409
+    assert client.post(f'/api/scripts/{script_id}/rescan',
+                       files={'file':('replacement.png',clean_buf.tobytes(),'image/png')},
+                       headers=scanner_headers).status_code == 409
 
     # ─── 7. Authoritative Student Results ───
     result_res = client.get(f"/api/students/{student_id}/results", headers=teacher_headers)

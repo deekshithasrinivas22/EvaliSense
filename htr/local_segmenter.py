@@ -67,6 +67,18 @@ class HandwritingLineSegmenter:
             ys, xs = np.where(ink[start:end, :] > 0)
             if len(xs) == 0:
                 continue
+            # A tilted rule can survive at the edge of a text band. Discard
+            # only long, thin components when computing the handwriting crop.
+            band = ink[start:end, :]
+            _, labels, stats, _ = cv2.connectedComponentsWithStats(band)
+            keep = np.ones(len(stats), dtype=np.uint8)
+            keep[0] = 0
+            for label, (_, _, cw, ch, _) in enumerate(stats[1:], 1):
+                if cw > max(80, width * .15) and cw > ch * 15:
+                    keep[label] = 0
+            ys, xs = np.where(keep[labels] > 0)
+            if not len(xs):
+                continue
             x_start, x_end = int(xs.min()) + x_offset, int(xs.max()) + 1 + x_offset
             y_start, y_end = max(0, start - 3) + y_offset, min(working_gray.shape[0], end + 3) + y_offset
             if y_end - y_start < self.minimum_height:

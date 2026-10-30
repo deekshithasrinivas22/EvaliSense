@@ -100,10 +100,15 @@ def test_script_rescan_role_boundaries(client):
     scanner_token = get_token(client, "scanner1", "Scanner@123")
 
     img_bytes = make_valid_png_bytes("Clean Rescan Image")
+    uploaded = client.post('/api/scripts/upload',data={'exam_id':1},
+                           files={'file':('new_script.png',io.BytesIO(img_bytes),'image/png')},
+                           headers={'Authorization':f'Bearer {scanner_token}'})
+    assert uploaded.status_code == 200
+    script_id = uploaded.json()['id']
 
     # 1. HOD tries to rescan -> 403 Forbidden
     res_hod = client.post(
-        "/api/scripts/1/rescan",
+        f"/api/scripts/{script_id}/rescan",
         files={"file": ("clean_scan.png", io.BytesIO(img_bytes), "image/png")},
         headers={"Authorization": f"Bearer {hod_token}"},
     )
@@ -111,7 +116,7 @@ def test_script_rescan_role_boundaries(client):
 
     # 2. Teacher tries to rescan -> 403 Forbidden
     res_teacher = client.post(
-        "/api/scripts/1/rescan",
+        f"/api/scripts/{script_id}/rescan",
         files={"file": ("clean_scan.png", io.BytesIO(img_bytes), "image/png")},
         headers={"Authorization": f"Bearer {teacher_token}"},
     )
@@ -119,7 +124,7 @@ def test_script_rescan_role_boundaries(client):
 
     # 3. Scanner CAN rescan via /api/scripts/1/rescan
     res_scanner = client.post(
-        "/api/scripts/1/rescan",
+        f"/api/scripts/{script_id}/rescan",
         files={"file": ("clean_scan.png", io.BytesIO(img_bytes), "image/png")},
         headers={"Authorization": f"Bearer {scanner_token}"},
     )

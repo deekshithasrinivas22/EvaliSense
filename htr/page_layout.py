@@ -36,7 +36,13 @@ def prepare_handwriting_page(image: np.ndarray):
         for x1,y1,x2,y2 in rules.reshape(-1,4):
             dx,dy=abs(int(x2-x1)),abs(int(y2-y1))
             if dx > max(1,dy)*15 or dy > max(1,dx)*15:
-                cv2.line(mask,(x1,y1),(x2,y2),0,9)
+                # Aligned letter baselines also produce Hough lines. A page
+                # rule must have continuous ink, including between words.
+                length = max(dx, dy) + 1
+                xs = np.rint(np.linspace(x1,x2,length)).astype(int)
+                ys = np.rint(np.linspace(y1,y2,length)).astype(int)
+                if np.mean(mask[ys,xs] > 0) >= .92:
+                    cv2.line(mask,(x1,y1),(x2,y2),0,9)
     count,labels,stats,_=cv2.connectedComponentsWithStats(mask,8)
     keep=np.zeros(count,np.uint8)
     if count>1:

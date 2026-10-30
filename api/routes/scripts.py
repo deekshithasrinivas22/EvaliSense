@@ -96,6 +96,7 @@ def get_script(
         "script": script.to_dict(),
         "issues": [issue.to_dict() for issue in script.scan_issues],
         "answers": [ans.to_dict() for ans in script.answers],
+        "pages": [page.to_dict() for page in sorted(script.pages, key=lambda p: p.page_number)],
     }
 
 
@@ -165,6 +166,7 @@ def rescan(
 @router.get("/{script_id}/image")
 def get_script_image(
     script_id: int,
+    page: int | None = Query(None, ge=1),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -173,7 +175,10 @@ def get_script_image(
     if not script:
         raise HTTPException(status_code=404, detail="Script not found.")
 
-    img_path = Path(script.original_path).resolve()
+    selected = next((p for p in script.pages if p.page_number == (page or 1)), None) if page or Path(script.original_path).suffix.lower() == '.pdf' else None
+    if page and not selected:
+        raise HTTPException(404, 'Script page not found.')
+    img_path = Path(selected.image_path if selected else script.original_path).resolve()
     # Path traversal safety check
     storage_root = config.storage_dir.resolve()
     if not str(img_path).startswith(str(storage_root)) and not str(img_path).startswith(str(config.project_root.resolve())):
@@ -183,3 +188,14 @@ def get_script_image(
         raise HTTPException(status_code=404, detail="Image file not found on server.")
 
     return FileResponse(str(img_path))
+
+
+@router.get('/{script_id}/pages')
+def script_pages(script_id: int, current_user: User=Depends(get_current_user), db: Session=Depends(get_db)):
+    script = db.get(AnswerScript, script_id)
+    if not script:
+        raise HTTPException(404, 'Script not found.')
+    if current_user.role.name == 'SCANNER' and script.uploaded_by != current_user.id:
+        raise HTTPException(403, 'Access denied.')
+    pages = [p.to_dict() for p in sorted(script.pages, key=lambda p: p.page_number)]
+    return {'script_id': script.id, 'total_pages': len(pages), 'pages': pages}

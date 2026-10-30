@@ -733,38 +733,9 @@ async function approveActiveKey(key) {
             throw new Error(`Cannot approve: Question #${missing.map(m => m.question_number).join(', ')} is missing a reference answer.`);
         }
 
-        // Mark previous active keys as superseded
-        const allExamKeys = await window.EvaliSenseDB.fsGetWhere('answer_keys', 'exam_id', '==', activeExamId);
-        for (const k of allExamKeys) {
-            if (k.id !== key.id && k.is_approved) {
-                await window.EvaliSenseDB.fsUpdateDoc('answer_keys', k.id, {
-                    is_approved: false,
-                    is_active: false,
-                    status: 'SUPERSEDED'
-                });
-            }
-        }
-
-        // Approve current key
-        await window.EvaliSenseDB.fsUpdateDoc('answer_keys', key.id, {
-            is_approved: true,
-            is_active: true,
-            status: 'APPROVED',
-            approved_at: new Date().toISOString()
-        });
-
-        // Add audit trail
-        await window.EvaliSenseDB.fsAddDoc('audit_logs', {
-            user_name: currentUser ? currentUser.full_name : 'Dr. Marcus Thorne',
-            user_role: 'TEACHER',
-            action: 'APPROVE_ANSWER_KEY',
-            entity_type: 'answer_key',
-            entity_id: key.id,
-            details: `Approved Answer Key Version ${key.version} for Exam #${activeExamId}`,
-            timestamp: new Date().toISOString()
-        });
-
-        alert('✓ Answer Key approved successfully and connected to AI evaluation service!');
+        const saved = await window.EvaliSenseDB.approveExamAnswerKey(key.exam_id, key.id,
+            currentUser?.full_name || 'Teacher');
+        alert(`Answer key approved.${saved.local ? ' Saved in this browser (cloud unavailable).' : ''}`);
         refreshActiveExamData();
     } catch (err) {
         alert(err.message);
@@ -851,7 +822,7 @@ function renderStructuredQuestions(questions) {
     if (!container) return;
 
     if (!questions.length) {
-        container.innerHTML = `<p class="empty-state">No imported question paper for this examination. Upload a PDF/TXT question paper, review the preview, and import it. Legacy demo questions are hidden.</p>`;
+        container.innerHTML = `<p class="empty-state">No imported question paper for this examination. Upload a PDF, TXT, image or Word (.docx) question paper, review the preview, and import it. Legacy demo questions are hidden.</p>`;
         return;
     }
 
@@ -1839,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show extraction result
             const summaryEl = document.getElementById('qp-extraction-summary');
             if (summaryEl) {
-                summaryEl.textContent = `${data.total_questions} questions found • Detected marks: ${data.total_marks} • ${data.needs_review || 0} need review • From: ${file.name}`;
+                summaryEl.textContent = `${data.total_questions} questions found • Detected marks: ${data.total_marks} • ${data.needs_review || 0} need review • From: ${file.name}. ${(data.warnings || []).join(' ')}`;
             }
 
             const previewEl = document.getElementById('qp-extracted-questions-preview');
@@ -1853,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <option value="WRITTEN" ${q.question_type === 'WRITTEN' ? 'selected' : ''}>Written answer</option>
                         </select></label>
                         <label>Allotted marks <input data-field="marks" type="number" min="0.01" step="any" value="${q.max_marks > 0 ? q.max_marks : ''}" style="width: 6rem;"></label>
-                        <p style="white-space: pre-wrap;">${escapeHtml(q.question_text)}</p>
+                        <label>Question text<textarea data-field="text" rows="3" style="width:100%;">${escapeHtml(q.question_text)}</textarea></label>
                         <label>Choices (MCQ only; one per line as A|choice text)
                             <textarea data-field="options" rows="3" style="width:100%;">${escapeHtml((q.options?.length ? q.options : q.candidate_options || []).map(o => `${o.label}|${o.text}`).join('\n'))}</textarea>
                         </label>
@@ -1889,7 +1860,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const question_type = row.querySelector('[data-field="type"]').value;
             const options = question_type === 'MCQ' ? parseChoiceLines(row.querySelector('[data-field="options"]').value) : [];
             return {...q, source_question_number: q.source_question_number || q.question_number, question_number: Number(row.querySelector('[data-field="number"]').value),
-                max_marks: Number(row.querySelector('[data-field="marks"]').value), question_type, options,
+                max_marks: Number(row.querySelector('[data-field="marks"]').value),
+                question_text: row.querySelector('[data-field="text"]').value.trim(), question_type, options,
                 criteria: question_type === 'MCQ' ? [] : q.criteria || [],
                 marks_need_review: false, type_needs_review: false, reviewed_by_teacher: true};
         });
@@ -1925,12 +1897,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const options = questionType === 'MCQ' ? parseChoiceLines(document.getElementById('eq-options').value) : [];
         if (questionType === 'MCQ' && !validChoices(options)) return alert('MCQs need at least two distinct labelled choices. Use A|choice text on each line.');
         const errorBox = document.getElementById('eq-validation-error');
+        if (!Number.isInteger(qnum) || qnum < 1 || !Number.isFinite(maxMarks) || maxMarks <= 0 || !qtext) return alert('Enter the question text, a positive whole question number and positive marks.');
 
         // Validation: Criteria Marks Sum <= Question Max Marks
         let criteriaSum = 0;
         for (const c of editingCriteria) {
             const m = parseFloat(c.marks) || 0;
-            if (m < 0) {
+            if (questionType !== 'MCQ' && (!Number.isFinite(m) || m <= 0 || !c.description?.trim())) {
                 if (errorBox) {
                     errorBox.textContent = `Validation Error: Criterion "${c.description || 'unnamed'}" cannot have negative marks.`;
                     errorBox.style.display = 'block';
@@ -1940,9 +1913,9 @@ document.addEventListener('DOMContentLoaded', () => {
             criteriaSum += m;
         }
 
-        if (criteriaSum > maxMarks) {
+        if (questionType !== 'MCQ' && editingCriteria.length && Math.abs(criteriaSum - maxMarks) > 0.01) {
             if (errorBox) {
-                errorBox.textContent = `Validation Error: The sum of rubric criteria marks (${criteriaSum}) exceeds the question's maximum marks (${maxMarks}).`;
+                errorBox.textContent = `Validation Error: Rubric criteria must total the question's maximum marks (${maxMarks}); current total is ${criteriaSum}.`;
                 errorBox.style.display = 'block';
             }
             return;
@@ -1983,14 +1956,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 docData = window.EvaliSenseDB.attachAnswerKeyReference(docData, window.EvaliSenseDB.activeStoredAnswerKey(keys, editingExam));
             }
             if (editingExam !== activeExamId) throw new Error('The selected exam changed. Reopen the question editor.');
-            if (qid) {
-                await window.EvaliSenseDB.fsUpdateDoc('questions', qid, docData);
-            } else {
-                await window.EvaliSenseDB.fsAddDoc('questions', docData);
-            }
+            const saved = await window.EvaliSenseDB.saveExamQuestion(editingExam, docData, qid);
 
             closeModal('modal-edit-question-rubric');
-            alert('✓ Question and marking rubric saved successfully!');
+            alert(`✓ Question and marking rubric saved successfully.${saved.local ? ' Saved in this browser (cloud unavailable).' : ''}`);
             refreshActiveExamData();
         } catch (err) {
             if (errorBox) {
@@ -2056,7 +2025,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (keyBusy) return;
         const examId = document.getElementById('ak-modal-exam-id').value;
         if (!examId || examId !== activeExamId) return alert('The examination changed. Reopen Upload Answer Key for the selected exam.');
-        if (!selectedAkFile) return alert('Select a PDF or TXT answer key.');
+        if (!selectedAkFile) return alert('Select a PDF, TXT or Word (.docx) answer key.');
         const button = document.getElementById('btn-submit-ak-modal');
         keyBusy = true; button.disabled = true;
         try {

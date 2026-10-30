@@ -846,10 +846,47 @@ async function importExamQuestions(examId, questions, mode = 'replace', filename
 }
 
 // Global Export
+async function approveExamAnswerKey(examId, keyId, reviewer = 'Teacher') {
+    const [keys, questions] = await Promise.all([readExamDocuments('answer_keys',examId),readExamDocuments('questions',examId)]);
+    const key = actualAnswerKeys(keys).find(k => k.id === keyId && k.exam_id === examId && k.is_active);
+    const paper = questions.filter(q => q.source === 'question_paper');
+    if (!key || !paper.length || paper.some(q => !q.reference_answer?.trim() ||
+        (q.reference_source === 'answer_key' && q.reference_key_id !== keyId))) {
+        throw new Error('Approval requires the active stored key and matched reference answers for every imported question.');
+    }
+    const changes = keys.filter(k => k.id !== keyId && (k.is_active || k.is_approved)).map(k =>
+        ({collection:'answer_keys',data:{...k,is_active:false,is_approved:false,status:'SUPERSEDED'}}));
+    changes.push({collection:'answer_keys',data:{...key,is_active:true,is_approved:true,status:'APPROVED',approved_at:new Date().toISOString()}});
+    changes.push({collection:'audit_logs',data:{id:`approve_${keyId}_${Date.now()}`,user_name:reviewer,user_role:'TEACHER',
+        action:'APPROVE_ANSWER_KEY',entity_type:'answer_key',entity_id:keyId,details:`Approved key version ${key.version} for exam ${examId}.`,timestamp:new Date().toISOString()}});
+    return {local:await commitDocumentChanges(changes)};
+}
+
+async function saveExamQuestion(examId, question, questionId = '') {
+    if (!examId || question.exam_id !== examId || !Number.isInteger(question.question_number) ||
+        question.question_number < 1 || !question.question_text?.trim() ||
+        !Number.isFinite(question.max_marks) || question.max_marks <= 0) throw new Error('A question needs text, a positive number and finite positive marks.');
+    const criteria = question.question_type === 'MCQ' ? [] : question.criteria || [];
+    if (criteria.length && (criteria.some(c => !c.id || !c.description?.trim() || !Number.isFinite(Number(c.marks)) || Number(c.marks) <= 0) ||
+        new Set(criteria.map(c => c.id)).size !== criteria.length ||
+        Math.abs(criteria.reduce((sum,c) => sum + Number(c.marks),0) - question.max_marks) > .01)) {
+        throw new Error('Rubric criteria need unique IDs, descriptions and positive marks totalling the question maximum.');
+    }
+    const existing = await readExamDocuments('questions', examId);
+    if (existing.some(q => q.id !== questionId && Number(q.question_number) === question.question_number)) throw new Error('This examination already has that question number.');
+    const id = questionId || `q_${examId}_${question.question_number}`;
+    const data = {...question, id, criteria, rubric_json: JSON.stringify({question:question.question_text,
+        max_marks:question.max_marks, reference_answer:question.reference_answer || '', criteria})};
+    const local = await commitDocumentChanges([{collection:'questions',data}]);
+    return {id, local};
+}
+
 window.firebaseConfig = firebaseConfig;
 window.EvaliSenseDB = {
     actualAnswerKeys, activeStoredAnswerKey, resolveKeyReference, attachAnswerKeyReference, saveExamAnswerKey,
     importExamQuestions,
+    saveExamQuestion,
+    approveExamAnswerKey,
     fbAuth,
     fbDb,
     DEMO_LOGINS,

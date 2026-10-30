@@ -132,6 +132,11 @@ def process_script_evaluation(
 
     if not exam.questions:
         raise ValueError(f"Exam '{exam.name}' has no questions configured.")
+    reviewed = db.query(FinalMark).join(AnswerAnswer).filter(
+        AnswerAnswer.script_id == script.id, FinalMark.decision != 'AUTO_ACCEPTED').first()
+    if reviewed:
+        from fastapi import HTTPException
+        raise HTTPException(409, 'This script has examiner-approved marks. Preserve the review history instead of re-evaluating it.')
 
     script.status = "PROCESSING"
     db.commit()
@@ -139,14 +144,28 @@ def process_script_evaluation(
     try:
         # Step 1: Preprocessing
         from preprocessing import ImagePreprocessor
-        preprocessed_path = original_path.parent / f"proc_{original_path.name}"
         preprocessor = ImagePreprocessor()
-        preprocessor.process(original_path, preprocessed_path)
-
-        # Step 2: HTR Recognition
         pipeline = get_htr_pipeline()
-        debug_dir = original_path.parent / "debug"
-        htr_res = pipeline.recognize_path(preprocessed_path, debug_dir)
+        from htr.result import HTRResult
+        pages = sorted(script.pages, key=lambda page: page.page_number)
+        inputs = [(page, Path(page.image_path)) for page in pages] or [(None, original_path)]
+        page_results = []
+        for page, path in inputs:
+            processed = path.with_name('proc_' + path.stem + '.png')
+            preprocessor.process(path, processed)
+            # Recognition needs the original ink pixels. Thresholded previews
+            # can outline faint strokes and amplify reverse-side show-through.
+            recognized = pipeline.recognize_path(path, path.parent / ('debug_' + path.stem))
+            page_results.append(recognized)
+            if page:
+                page.ocr_text = recognized.full_text
+                page.ocr_confidence = recognized.average_confidence
+                page.status = 'OCR_COMPLETED'
+        all_lines = [line for result in page_results for line in result.lines]
+        scores = [line.confidence for line in all_lines if line.confidence is not None]
+        htr_res = HTRResult('\n\n'.join(result.full_text for result in page_results), all_lines,
+                            sum(scores) / len(scores) if scores else None,
+                            {'pages': [result.metadata for result in page_results]})
 
         full_text = htr_res.full_text or ""
         avg_conf = htr_res.average_confidence or 0.0
@@ -196,7 +215,14 @@ def process_script_evaluation(
         any_high_risk = False
         evaluated_answers = []
 
+        from api.script_evaluation import split_script
+        blocks, _ = split_script(full_text)
+
         for question in exam.questions:
+            matching = [block for block in blocks if block['number'] == question.question_number]
+            student_text = matching[0]['text'] if len(matching) == 1 else ''
+            if len(exam.questions) == 1 and not blocks:
+                student_text = full_text
             # Look up or create AnswerAnswer
             answer = db.query(AnswerAnswer).filter(
                 AnswerAnswer.script_id == script.id,
@@ -208,15 +234,28 @@ def process_script_evaluation(
                     script_id=script.id,
                     question_id=question.id,
                     image_path=str(original_path),
-                    extracted_text=full_text,
+                    extracted_text=student_text,
                     ocr_confidence=avg_conf,
                     status="PROCESSING",
                 )
                 db.add(answer)
                 db.flush()
             else:
-                answer.extracted_text = full_text
+                answer.extracted_text = student_text
                 answer.ocr_confidence = avg_conf
+            if answer.final_mark and answer.final_mark.decision == 'AUTO_ACCEPTED':
+                db.delete(answer.final_mark)
+                db.flush()
+
+            if not student_text.strip() or '[Unclear' in student_text:
+                if answer.ai_evaluation:
+                    db.delete(answer.ai_evaluation)
+                answer.status = 'HIGH_RISK'
+                any_high_risk = True
+                evaluated_answers.append({'answer_id': answer.id, 'question_number': question.question_number,
+                    'ai_mark': None, 'max_marks': question.max_marks, 'risk_label': 'HIGH',
+                    'reason': 'Missing, ambiguous or uncertain numbered answer. Teacher review required; no mark assigned.'})
+                continue
 
             # Parse rubric
             rubric_dict = json.loads(question.rubric_json) if question.rubric_json else {
@@ -228,7 +267,7 @@ def process_script_evaluation(
             rubric = Rubric.from_dict(rubric_dict)
 
             # Evaluate with Sentence-BERT
-            eval_result = evaluator.evaluate(full_text, rubric)
+            eval_result = evaluator.evaluate(student_text, rubric)
 
             # Extract 16 features
             features_vec = extract_features(htr_res.to_dict(), eval_result.to_dict())
@@ -322,6 +361,7 @@ def process_script_evaluation(
             "answers": evaluated_answers,
             "extracted_text": full_text,
             "ocr_confidence": avg_conf,
+            "pages": [page.to_dict() for page in pages],
         }
 
     except Exception as exc:

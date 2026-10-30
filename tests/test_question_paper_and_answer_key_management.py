@@ -356,6 +356,11 @@ class TestAnswerKeyManagement:
 
     def test_answer_key_dict_serialization_compatibility(self, client):
         """AnswerKeyFile.to_dict() must provide both original_filename/uploaded_at and file_name/created_at."""
+        token = get_token(client, 'teacher1', 'Teacher@123')
+        created = client.post('/api/teacher/exams/1/answer-key',
+                              files={'file': ('serialization.txt', b'Test marking document', 'text/plain')},
+                              headers={'Authorization': f'Bearer {token}'})
+        assert created.status_code == 200
         db = SessionLocal()
         try:
             ak = db.query(AnswerKeyFile).filter(AnswerKeyFile.exam_id == 1).first()

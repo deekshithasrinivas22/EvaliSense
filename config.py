@@ -7,6 +7,7 @@ variables prefixed with ``EVALISENSE_``.
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -34,7 +35,7 @@ class Config:
     db_path: Path = field(default=None)             # type: ignore[assignment]
 
     # ---------- authentication & security ----------
-    jwt_secret: str = "evalisense_secret_key_change_in_production"
+    jwt_secret: str = field(default_factory=lambda: secrets.token_urlsafe(48))
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
 
@@ -102,6 +103,7 @@ class Config:
         """Override fields from ``EVALISENSE_*`` environment variables."""
         prefix = "EVALISENSE_"
         mapping = {
+            "JWT_SECRET": "jwt_secret",
             "HTR_MODEL_NAME": "htr_model_name",
             "HTR_DEVICE": "htr_device",
             "EMBEDDING_MODEL": "embedding_model_name",

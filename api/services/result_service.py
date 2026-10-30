@@ -44,14 +44,15 @@ def get_student_exam_result(db: Session, student_id: int, exam_id: int) -> dict[
     total_max = exam.total_marks or 0.0
 
     for q in exam.questions:
-        q_ans = None
-        for script in scripts:
-            for ans in script.answers:
-                if ans.question_id == q.id:
-                    q_ans = ans
-                    break
-            if q_ans:
-                break
+        from datetime import datetime
+        candidates = [answer for script in scripts for answer in script.answers if answer.question_id == q.id]
+        # A blank earlier upload must not hide a later examiner-approved mark.
+        # Human decisions outrank automatically accepted AI marks.
+        q_ans = max(candidates, key=lambda answer: (
+            bool(answer.final_mark and answer.final_mark.decision != 'AUTO_ACCEPTED'),
+            bool(answer.final_mark),
+            answer.final_mark.reviewed_at if answer.final_mark else datetime.min,
+            answer.id), default=None)
 
         ai_mark = None
         risk_label = None

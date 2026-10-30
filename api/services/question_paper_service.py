@@ -38,6 +38,7 @@ def check_exam_authorization(db: Session, user: User, exam: Exam) -> None:
             .filter(
                 TeacherSubject.teacher_id == user.id,
                 TeacherSubject.subject_id == exam.subject_id,
+                TeacherSubject.is_active.is_(True),
             )
             .first()
             is not None

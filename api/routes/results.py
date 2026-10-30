@@ -16,6 +16,18 @@ from api.services.result_service import (
 router = APIRouter(tags=["Results"])
 
 
+@router.get('/api/subjects/{subject_id}/results')
+def subject_results(subject_id: int, current_user: User=Depends(get_current_user), db: Session=Depends(get_db)):
+    subject = db.get(Subject, subject_id)
+    if not subject:
+        raise HTTPException(404, 'Subject not found.')
+    exams = db.query(Exam).filter_by(subject_id=subject_id).all()
+    results = [get_exam_summary_results(db, exam.id) for exam in exams]
+    results = [result for result in results if result]
+    return {'subject_id': subject_id, 'exam_results': results,
+            'students_summary': [student for result in results for student in result.get('students', [])]}
+
+
 @router.get("/api/students/{student_id}/results")
 def get_student_results(
     student_id: int,

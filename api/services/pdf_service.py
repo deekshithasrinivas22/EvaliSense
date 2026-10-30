@@ -34,6 +34,17 @@ ALLOWED_PDF_MIME_TYPES = {
 }
 
 
+def page_needs_ocr(page, text):
+    """A short selectable header must not hide a scanned answer underneath."""
+    if not text.strip():
+        return True
+    if len(text.strip()) >= 300:
+        return False
+    area = max(1, page.rect.get_area())
+    return any(pymupdf.Rect(image['bbox']).get_area() / area > .35
+               for image in page.get_image_info())
+
+
 def calculate_render_scale(
     rect: pymupdf.Rect,
     target_dpi: int | None = None,

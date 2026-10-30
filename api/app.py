@@ -179,7 +179,7 @@ async def upload_image(file: UploadFile = File(...)):
         raise HTTPException(400, "No filename provided.")
 
     ext = Path(file.filename).suffix.lower()
-    allowed_exts = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".pdf", ".txt"}
+    allowed_exts = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".pdf", ".txt", ".docx"}
     if ext not in allowed_exts:
         raise HTTPException(400, f"Unsupported file format: {ext}. Allowed: {', '.join(sorted(allowed_exts))}")
 
@@ -188,7 +188,16 @@ async def upload_image(file: UploadFile = File(...)):
     session_dir.mkdir(parents=True, exist_ok=True)
 
     original_path = session_dir / f"original{ext}"
-    content_bytes = await file.read()
+    content_bytes = await file.read(config.max_upload_size_bytes + 1)
+    if not content_bytes:
+        raise HTTPException(400, 'The uploaded file is empty.')
+    if len(content_bytes) > config.max_upload_size_bytes:
+        raise HTTPException(400, 'File exceeds maximum upload size.')
+    if ext in {'.pdf', '.docx'}:
+        from api.services.question_extraction_service import validate_question_paper_file
+        valid, message, _ = validate_question_paper_file(file, content_bytes)
+        if not valid:
+            raise HTTPException(400, message)
 
     with open(original_path, "wb") as f:
         f.write(content_bytes)
@@ -211,6 +220,12 @@ async def upload_image(file: UploadFile = File(...)):
             session_data["status"] = "text_uploaded"
         except Exception:
             pass
+    elif ext == '.docx':
+        from api.services.question_extraction_service import extract_text_from_docx_bytes, docx_has_images
+        if docx_has_images(content_bytes):
+            raise HTTPException(422, 'This Word file contains embedded images. Export it as PDF and upload that file so all image content can be recognized.')
+        session_data['extracted_text'] = extract_text_from_docx_bytes(content_bytes)
+        session_data['status'] = 'text_uploaded'
 
     _sessions[session_id] = session_data
 
@@ -235,7 +250,7 @@ def _preprocess_demo_session(session):
     session.pop("pdf_embedded_text", None)
     session.pop("pdf_pages", None)
     session.pop("processed_path", None)
-    if file_type == "txt":
+    if file_type in {"txt", "docx"}:
         session["preprocessing"] = {"metadata": {"skipped": True, "reason": "TXT already contains text; TrOCR is not needed."}}
         session["status"] = "preprocessed"
         return
@@ -256,7 +271,8 @@ def _preprocess_demo_session(session):
                 raise HTTPException(400, f"PDF must contain between 1 and {config.max_pdf_pages} pages.")
             for number, page in enumerate(doc, 1):
                 text = page.get_text(sort=True).strip()
-                if text:
+                from api.services.pdf_service import page_needs_ocr
+                if text and not page_needs_ocr(page, text):
                     pages.append({"page_number": number, "text": text})
                     continue
                 width, height = page.rect.width, page.rect.height
@@ -316,7 +332,7 @@ def _recognize_demo_session(session):
     file_type = session.get("file_type", "")
     if file_type == "pdf" and not session.get("pdf_pages"):
         _preprocess_demo_session(session)
-    if file_type == "txt":
+    if file_type in {"txt", "docx"}:
         sources = [{"page_number": 1, "text": session.get("extracted_text", "")}]
     elif session.get("pdf_pages"):
         sources = session["pdf_pages"]
@@ -365,7 +381,7 @@ def _recognize_demo_session(session):
     confidences = [line.confidence for line in lines if line.confidence is not None]
     metadata = {"elapsed_seconds": round(time.perf_counter() - started, 2), "pages": page_metadata,
         "method": "local_ocr" if pipeline else "direct_text", "device": pipeline.recognizer.device if pipeline else None,
-        "ocr_version": "local-ensemble-v6", "source_filename": session.get("filename"),
+        "ocr_version": "local-ensemble-v7", "source_filename": session.get("filename"),
         "source_sha256": hashlib.sha256(Path(session["original_path"]).read_bytes()).hexdigest(),
         "source_kind": "uploaded_file" if session.get("filename") else "dataset"}
     return HTRResult(full_text, lines, sum(confidences) / len(confidences) if confidences else None, metadata)
@@ -405,7 +421,7 @@ async def recognize(session_id: str):
         raise HTTPException(404, "Session not found.")
     if session.get("recognition_in_progress") or session.get("preprocessing_in_progress"):
         raise HTTPException(409, "This session is already processing. Please wait.")
-    if session.get("htr_result", {}).get("metadata", {}).get("ocr_version") == "local-ensemble-v6":
+    if session.get("htr_result", {}).get("metadata", {}).get("ocr_version") == "local-ensemble-v7":
         return _demo_recognition_response(session_id, session["htr_result"], cached=True)
     session["recognition_in_progress"] = True
     session["recognition_started_at"] = time.time()
@@ -432,77 +448,25 @@ async def recognize(session_id: str):
 async def extract_questions(file: UploadFile = File(...)):
     """Extract questions and marks from an uploaded question paper (PDF, TXT, or image).
     Returns structured JSON with detected questions and allocated marks."""
-    import re
-
-    if not file.filename:
-        raise HTTPException(400, "No filename provided.")
-
-    ext = Path(file.filename).suffix.lower()
-    content_bytes = await file.read()
-    if not content_bytes:
-        raise HTTPException(400, "The uploaded file is empty.")
-    extracted_text = ""
-
-    # Step 1: Extract raw text based on file type
-    if ext == ".txt":
-        extracted_text = content_bytes.decode("utf-8", errors="replace")
-
-    elif ext == ".pdf":
-        import fitz
-        try:
-            with fitz.open(stream=content_bytes, filetype="pdf") as doc:
-                if doc.needs_pass:
-                    raise HTTPException(400, "This PDF is password-protected. Upload an unlocked copy.")
-                pages_text = []
-                for page_number, page in enumerate(doc, 1):
-                    page_text = page.get_text(sort=True)
-                    if not page_text.strip() and page.get_images():
-                        raise HTTPException(400, f"Page {page_number} is an image without readable text. Upload an OCR text PDF or TXT transcription so questions are not skipped.")
-                    pages_text.append(page_text)
-                extracted_text = "\n".join(pages_text)
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(400, "Could not read this PDF. Check that it is valid and unlocked.")
-
-    elif ext in {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}:
-        # Save temporarily, preprocess, and run OCR
-        session_id = str(uuid.uuid4())[:12]
-        session_dir = config.results_dir / session_id
-        session_dir.mkdir(parents=True, exist_ok=True)
-        img_path = session_dir / f"original{ext}"
-        with open(img_path, "wb") as f:
-            f.write(content_bytes)
-        try:
-            from preprocessing import ImagePreprocessor
-            preprocessor = ImagePreprocessor()
-            processed_path = session_dir / "processed.png"
-            preprocessor.process(str(img_path), str(processed_path))
-
-            pipeline = _get_htr()
-            result = pipeline.recognize_path(str(processed_path), session_dir / "debug")
-            extracted_text = result.full_text
-        except Exception as e:
-            logger.warning("OCR extraction failed: %s", e)
-            raise HTTPException(500, f"Could not extract text from image: {e}")
-    else:
-        raise HTTPException(400, f"Unsupported file format: {ext}")
-
+    from api.services import question_extraction_service as extraction
+    content = await file.read(extraction.MAX_QP_FILE_SIZE + 1)
+    valid, message, meta = extraction.validate_question_paper_file(file, content)
+    if not valid:
+        raise HTTPException(400, message)
+    extracted_text, pages, warnings = await run_in_threadpool(
+        extraction.extract_text_from_document, file, content)
     if not extracted_text.strip():
-        raise HTTPException(400, "No readable text found. For scanned PDFs, upload an OCR text PDF or a TXT transcription.")
-
-    # Step 2: Parse extracted text to find questions and marks
+        raise HTTPException(422, "No readable question text was recovered. Review the source scan or provide a TXT transcription.")
     questions = _parse_questions_from_text(extracted_text)
-
-    logger.info("Extracted %d questions from %s", len(questions), file.filename)
-    return {
-        "filename": file.filename,
-        "extracted_text": extracted_text,
-        "questions": questions,
-        "total_questions": len(questions),
-        "total_marks": sum(q.get("max_marks", 0) for q in questions),
-        "needs_review": sum(bool(q.get("warnings")) for q in questions)
-    }
+    if any(page.get('used_ocr') for page in pages):
+        warnings.append('OCR question text must be checked against the paper before import, including numbers and marks.')
+        for question in questions:
+            question['warnings'].append('OCR source: verify this question against the original paper.')
+    return {"filename": file.filename, "extracted_text": extracted_text, "questions": questions,
+            "pages": pages, "warnings": warnings,
+            "total_questions": len(questions),
+            "total_marks": sum(q.get('max_marks') or 0 for q in questions),
+            "needs_review": sum(bool(q.get('warnings')) for q in questions)}
 
 
 def _parse_questions_from_text(text: str) -> list:

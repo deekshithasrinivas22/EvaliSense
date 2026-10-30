@@ -172,15 +172,15 @@ class ExamResponse(BaseModel):
 class ExamQuestionCreate(BaseModel):
     question_number: int = Field(..., ge=1)
     question_text: str = Field(..., min_length=3)
-    max_marks: float = Field(..., gt=0)
+    max_marks: float = Field(..., gt=0, allow_inf_nan=False)
     reference_answer: str | None = None
     rubric_json: str | None = None
 
 
 class ExamQuestionUpdate(BaseModel):
-    question_number: int | None = None
-    question_text: str | None = None
-    max_marks: float | None = None
+    question_number: int | None = Field(None, ge=1)
+    question_text: str | None = Field(None, min_length=3)
+    max_marks: float | None = Field(None, gt=0, allow_inf_nan=False)
     reference_answer: str | None = None
     rubric_json: str | None = None
 

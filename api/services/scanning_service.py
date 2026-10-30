@@ -40,26 +40,16 @@ def validate_image_file(file: UploadFile, content: bytes) -> tuple[bool, str, di
     if ext not in ALLOWED_EXTENSIONS:
         return False, f"Unsupported file extension '{ext}'. Allowed: {', '.join(ALLOWED_EXTENSIONS)}", {}
 
-    if len(content) > MAX_FILE_SIZE:
-        return False, f"File exceeds maximum size of 25MB (got {len(content) / (1024*1024):.1f}MB)", {}
+    if len(content) > min(MAX_FILE_SIZE, config.max_upload_size_bytes):
+        return False, "File exceeds maximum upload size.", {}
 
     if len(content) < 10:
         return False, "File is empty or too small.", {}
 
     # Handle PDF files — validate signature but skip OpenCV quality checks
     if ext == ".pdf":
-        if not content[:4] == b"%PDF":
-            return False, "File content does not match PDF format (corrupted or invalid).", {}
-        metadata = {
-            "width": 0,
-            "height": 0,
-            "blur_score": 0.0,
-            "quality": "ACCEPTABLE",
-            "is_blurry": False,
-            "is_pdf": True,
-            "file_size": len(content),
-        }
-        return True, "PDF validation passed", metadata
+        from api.services.pdf_service import validate_pdf_document
+        return validate_pdf_document(file, content)
 
     # Read image with OpenCV
     nparr = np.frombuffer(content, np.uint8)
@@ -109,6 +99,9 @@ def save_and_register_script(
     # Validate image quality
     is_valid, validation_msg, quality_meta = validate_image_file(file, content)
 
+    if not is_valid and not quality_meta.get('is_blurry'):
+        raise HTTPException(400, validation_msg)
+
     # Determine student mapping
     student = None
     student_confidence = 1.0
@@ -146,6 +139,8 @@ def save_and_register_script(
     db.add(script)
     db.commit()
     db.refresh(script)
+
+    register_script_pages(db, script)
 
     # If image failed quality check, immediately log a scan issue
     if not is_valid:
@@ -229,6 +224,10 @@ def rescan_script(
     script = db.query(AnswerScript).filter(AnswerScript.id == script_id).first()
     if not script:
         raise HTTPException(status_code=404, detail="Answer script not found.")
+    if script.uploaded_by != user.id:
+        raise HTTPException(403, 'Only the scanner who uploaded this script can replace it.')
+    if any(answer.final_mark for answer in script.answers):
+        raise HTTPException(409, 'This script already has final marks. Upload a separate script to preserve the examiner history.')
 
     content = file.file.read()
     file.file.seek(0)
@@ -266,6 +265,8 @@ def rescan_script(
     db.commit()
     db.refresh(script)
 
+    register_script_pages(db, script)
+
     create_notification(
         db=db,
         user_id=user.id,
@@ -277,3 +278,19 @@ def rescan_script(
     )
 
     return script
+
+
+def register_script_pages(db, script):
+    """Keep ordered page records for images and validated multi-page PDFs."""
+    from api.database.models import ScriptPage
+    path = Path(script.original_path)
+    if path.suffix.lower() == '.pdf':
+        from api.services.pdf_service import render_pdf_pages
+        paths = render_pdf_pages(path, path.parent / (path.stem + '_pages'))
+    else:
+        paths = [path]
+    db.query(ScriptPage).filter_by(script_id=script.id).delete()
+    for number, page in enumerate(paths, 1):
+        db.add(ScriptPage(script_id=script.id, page_number=number,
+                          image_path=str(page), original_filename=script.original_filename))
+    db.commit()
