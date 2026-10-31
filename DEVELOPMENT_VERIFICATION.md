@@ -1,5 +1,33 @@
 # EvaliSense development verification
 
+## Latest numbering and page-label fix (2026-10-31)
+
+The actual four-page scan was located in the running app's uploaded sessions.
+Recognition now uses the pixel gap between a margin number and its answer,
+rather than assuming that an OCR letter such as the `G` in `2G.` starts the
+answer. Optical number crops must agree with an independent handwriting reading
+before an ambiguous number is replaced. Compact MCQs also receive an independent
+whole-entry check, resolving the reproduced 15/16 error without sequence filling.
+
+A large footer gutter separates the last MCQ from the circled page counter.
+Standalone Solution headings and page counters are excluded in page-furniture
+positions. Clipped or weakly supported MCQ options are left empty while a readable
+question number is retained; an option letter is never invented.
+
+Real-scan checks using the same rendered pixels as the running application:
+
+- Page 1: question numbers 1 through 20 were recovered without duplicates.
+- The separately cropped written-answer number 26 was confirmed by both optical
+  and handwriting number-crop readings; the answer body retained its own crop.
+- The Solution heading and page-counter crop were excluded from answer text.
+- The final MCQ option is clipped in the source; it still needs examiner input.
+
+Validation: 132 full-suite backend tests passed, followed by 19 focused numbering
+and recognition-cache checks after the version update; 10 frontend tests passed.
+The live port-8001 server was updated to OCR version v10, with all three existing
+sessions restored and the uploaded scan hash/page count unchanged. Use Re-review
+once to regenerate an existing cached reading with the updated recognizer.
+
 ## Latest UI simplification (2026-10-31)
 
 At the user's request, keep one **Re-review** button and the editable script.

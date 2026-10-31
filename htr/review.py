@@ -12,7 +12,7 @@ def clean_display_text(text):
     return re.sub(r'\n{3,}','\n\n','\n'.join(line.rstrip() for line in text.splitlines())).strip()
 
 
-def split_column_regions(regions):
+def split_column_regions(regions, page_shape=None):
     """Separate side-by-side text only with repeated gutter evidence.
 
     A normal word space, or the gap between an MCQ number and option, must
@@ -28,14 +28,16 @@ def split_column_regions(regions):
         active = (gray < 180).sum(axis=0) > max(1, h * .02)
         changes = np.diff(np.r_[True, active, True].astype(int))
         for start, end in zip(np.where(changes == -1)[0], np.where(changes == 1)[0]):
-            if (end - start >= max(h * 1.8, w * .08) and start > w * .1 and end < w * .9
+            footer_gap=bool(page_shape and region.bounding_box[1]>page_shape[0]*.92
+                            and start>0 and end<w and end-start>w*.5 and region.bounding_box[0]+end>page_shape[1]*.85)
+            if footer_gap or (end - start >= max(h * 1.8, w * .08) and start > w * .1 and end < w * .9
                     and w * .2 < (start + end) / 2 < w * .8):
-                candidates.append((index, region.bounding_box[0] + (start + end) // 2))
+                candidates.append((index, region.bounding_box[0] + (start + end) // 2,footer_gap))
     output = []
     for index, region in enumerate(regions):
         x,y,w,h = region.bounding_box
-        cuts = [cut for row,cut in candidates if row == index and
-                sum(abs(other-cut) <= max(h*2,30) for _,other in candidates) >= 3]
+        cuts = [cut for row,cut,footer_gap in candidates if row == index and
+                (footer_gap or sum(abs(other-cut) <= max(h*2,30) for _,other,_ in candidates) >= 3)]
         if not cuts:
             output.append(region)
             continue

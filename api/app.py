@@ -39,6 +39,8 @@ logger = get_logger(__name__)
 # App initialisation
 # ──────────────────────────────────────────────────────────────────────
 
+OCR_VERSION = 'local-ensemble-v10'
+
 app = FastAPI(
     title="EvaliSense API",
     description="AI-Powered Handwritten Examination Evaluation with ML-Based Grading Error Prediction",
@@ -382,7 +384,7 @@ def _recognize_demo_session(session, enhanced=False):
     confidences = [line.confidence for line in lines if line.confidence is not None]
     metadata = {"elapsed_seconds": round(time.perf_counter() - started, 2), "pages": page_metadata,
         "method": "local_ocr" if pipeline else "direct_text", "device": pipeline.recognizer.device if pipeline else None,
-        "ocr_version": "local-ensemble-v9", "source_filename": session.get("filename"),
+        "ocr_version": OCR_VERSION, "source_filename": session.get("filename"),
         "recognition_mode": "enhanced" if enhanced else "standard",
         "blank_document": not bool(full_text.strip()),
         "source_sha256": hashlib.sha256(Path(session["original_path"]).read_bytes()).hexdigest(),
@@ -405,7 +407,7 @@ async def htr_status():
     dependencies = {name: importlib.util.find_spec(name) is not None for name in ("cv2", "numpy", "scipy", "rapidocr", "onnxruntime", "torch", "transformers", "PIL")}
     recognizer = getattr(_htr_pipeline, "recognizer", None)
     loaded = getattr(_htr_pipeline, "model", None) is not None
-    return {"dependencies_available": all(dependencies.values()), "dependencies": dependencies,
+    return {"ocr_version": OCR_VERSION, "dependencies_available": all(dependencies.values()), "dependencies": dependencies,
             "model_loaded": loaded, "device": recognizer.device if loaded else "auto", "model": getattr(recognizer, "display_name", "Local PP-OCRv5") }
 
 
@@ -427,7 +429,7 @@ async def recognize(session_id: str, force: bool = Query(False), enhanced: bool 
         raise HTTPException(404, "Session not found.")
     if session.get("recognition_in_progress") or session.get("preprocessing_in_progress") or session.get('line_recheck_in_progress') or session.get('script_evaluation_busy'):
         raise HTTPException(409, "This session is already processing. Please wait.")
-    if not force and session.get("htr_result", {}).get("metadata", {}).get("ocr_version") == "local-ensemble-v9" and (not enhanced or session['htr_result']['metadata'].get('recognition_mode') == 'enhanced'):
+    if not force and session.get("htr_result", {}).get("metadata", {}).get("ocr_version") == OCR_VERSION and (not enhanced or session['htr_result']['metadata'].get('recognition_mode') == 'enhanced'):
         return _demo_recognition_response(session_id, session["htr_result"], cached=True)
     session["recognition_in_progress"] = True
     session["recognition_started_at"] = time.time()

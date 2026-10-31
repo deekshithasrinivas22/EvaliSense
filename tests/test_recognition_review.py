@@ -18,7 +18,7 @@ def session(tmp_path):
     path=tmp_path/'scan.png'
     cv2.imwrite(str(path),np.full((100,200,3),255,np.uint8))
     previous={'full_text':'1. B','lines':[], 'average_confidence':.8,
-              'metadata':{'ocr_version':'local-ensemble-v9','recognition_mode':'standard',
+              'metadata':{'ocr_version':api.OCR_VERSION,'recognition_mode':'standard',
                           'pages':[{'page_number':1,'regions':[{'line_number':1,'bounding_box':[10,10,70,30]}]}]}}
     api._sessions['retry-test']={'original_path':str(path),'htr_result':deepcopy(previous),'eval_result':{'old':True},
                                  'script_evaluation':{'old':True},'status':'recognized'}
@@ -32,7 +32,7 @@ def test_force_bypasses_cache_and_invalidates_old_scores(session,monkeypatch):
     def reader(value,enhanced=False):
         called.append(enhanced)
         return HTRResult('1. C',[RecognizedLine(1,'1. C',.9)],.9,
-                         {'ocr_version':'local-ensemble-v9','recognition_mode':'enhanced'})
+                         {'ocr_version':api.OCR_VERSION,'recognition_mode':'enhanced'})
     monkeypatch.setattr(api,'_recognize_demo_session',reader)
     client=TestClient(api.app)
     assert client.post('/api/recognize/retry-test').json()['cached']

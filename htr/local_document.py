@@ -14,6 +14,7 @@ from .ensemble import recognize_written
 from .hybrid_recognizer import optical_mcq
 from .review import split_column_regions
 from .ink import assess_line_ink
+from .numbering import page_label, question_number, corroborated_mcq, compact_candidate
 
 def fields(image):
     gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY);mask=(gray<210).astype(np.uint8)
@@ -126,7 +127,7 @@ class LocalDocumentPipeline(HTRPipeline):
             report('completed')
             return HTRResult('',[],None,{'model':self.recognizer.display_name,'foreground':foreground,'quality_warnings':[], 'regions':[],'number_of_lines':0})
         prepared,angle,inverse=straighten(prepared,self.detector)
-        proposed=split_column_regions(self.segmenter.segment(prepared))
+        proposed=split_column_regions(self.segmenter.segment(prepared),prepared.shape)
         regions=[];ignored=[]
         for region in proposed:
             ink=assess_line_ink(region.image)
@@ -157,10 +158,10 @@ class LocalDocumentPipeline(HTRPipeline):
             x,y,w,h=r.bounding_box
             if w/max(h,1)<5 and any(abs(regions[j].bounding_box[0]-x)<max(w,80) and abs(regions[j].bounding_box[1]-y)<h*5 for j in clustered):
                 clustered.add(i)
-        lines=[];warnings=[];records=[]
+        lines=[];warnings=[];records=[];seen_answer=False
         for i,(region,candidate) in enumerate(zip(regions,candidates)):
             text=candidate['text'];support=candidate['mean'];reason=None;alternatives={'whole_line':text}
-            footer=bool(region.bounding_box[1]>prepared.shape[0]*.93 and re.fullmatch(r'/?\d*\s*/?\s*total\s*\d+',text,re.I))
+            footer=page_label(text,region.bounding_box,prepared.shape,before_first_answer=not seen_answer) or bool(region.bounding_box[1]>prepared.shape[0]*.93 and re.fullmatch(r'/?\d*\s*/?\s*total\s*\d+',text,re.I))
             pair=fields(region.image) if i in clustered else None
             if pair:
                 number,ns,nmin=self.read(pair[0],set('0123456789.():- '))
@@ -180,12 +181,21 @@ class LocalDocumentPipeline(HTRPipeline):
                     elif min(nmin,omin)<.80 and not (whole_pair == field_pair and candidate['minimum'] >= .8):
                         reason='The question number or option has weak visual support. Confirm the candidate against the scan.'
                     alternatives.update(number_support=ns,option_support=os)
-                    if reason:
-                        independent = self.handwriting.recognize(cv2.copyMakeBorder(
-                            region.image,8,8,8,8,cv2.BORDER_CONSTANT,value=(255,255,255)))
-                        alternatives['handwriting'] = independent.text
-                        if optical_mcq(independent.text) == field_pair and (independent.confidence or 0) >= .8 and min(ns,os) >= .5:
-                            reason = None
+                    # Check complete compact entries independently, including
+                    # apparently confident field reads (e.g. handwritten 15/16).
+                    independent = self.handwriting.recognize(cv2.copyMakeBorder(
+                        region.image,8,8,8,8,cv2.BORDER_CONSTANT,value=(255,255,255)))
+                    alternatives['handwriting'] = independent.text
+                    contextual,context_support,_=self.read(cv2.copyMakeBorder(region.image,5,5,5,5,cv2.BORDER_CONSTANT,value=(255,255,255)))
+                    alternatives['optical_context']=contextual
+                    independent_pair=optical_mcq(independent.text)
+                    corroborated=corroborated_mcq([(candidate['text'],candidate['mean']),(contextual,context_support)],independent.text,independent.confidence)
+                    if corroborated and (independent.confidence or 0)>=.8:
+                        text=f'{corroborated[0]}. {corroborated[1]}'
+                        support=min(context_support,independent.confidence)
+                        reason=None
+                    elif independent_pair == field_pair and (independent.confidence or 0) >= .8 and min(ns,os) >= .5:
+                        reason = None
                 else:reason='The short answer fields could not be separated reliably.'
             elif i in clustered:
                 reason='The MCQ number and option could not be separated reliably. Confirm the visible entry.'
@@ -193,12 +203,16 @@ class LocalDocumentPipeline(HTRPipeline):
                 reading=recognize_written(self,self.handwriting,region.image)
                 text=reading['text'];support=reading['confidence'];reason=reading['reason']
                 alternatives.update(reading['alternatives'])
+            footer=footer or page_label(text,region.bounding_box,prepared.shape,before_first_answer=not seen_answer)
+            if i in clustered and not footer:
+                text=compact_candidate(text,support,bool(reason))
             report('recognizing',i+1,len(regions))
             box=self.source_box(region.bounding_box,inverse/scale,source_shape)
             # Keep footer text in the audit record, but not inside the last answer.
             records.append({'line_number':i+1,'text':text,'confidence':support,'bounding_box':box,
                             'alternatives':alternatives,'review_reason':reason,'excluded_footer':footer})
             if footer:continue
+            if question_number(text):seen_answer=True
             if reason:
                 warnings.append({'line_number':i+1,'raw_text':text,'bounding_box':box,'reason':reason})
                 text=f'[Unclear line {i+1} — review scan]'
