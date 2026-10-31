@@ -47,6 +47,17 @@
         <button class="btn btn-primary" id="btn-evaluate" disabled style="margin-top: 1rem;">Evaluate Whole Script</button>
         <div id="script-text-review" style="display:none; margin-top:1rem;">
             <label for="script-text">Extracted answer script — review and correct OCR mistakes here</label>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0;">
+                <button type="button" class="btn btn-secondary" id="btn-ocr-rereview">Re-review / Rescan text</button>
+                <button type="button" class="btn btn-secondary" id="btn-ocr-replace">Upload clearer scan</button>
+                <button type="button" class="btn btn-secondary" id="btn-ocr-restore" disabled>Restore previous text</button>
+            </div>
+            <p id="ocr-retry-status" role="status" aria-live="polite"></p>
+            <details id="ocr-retry-comparison" style="display:none;"><summary>Compare the fresh reading with your text</summary>
+                <pre id="ocr-retry-candidate" style="white-space:pre-wrap;"></pre>
+                <button type="button" class="btn btn-secondary" id="btn-ocr-use-reading">Use fresh reading</button>
+            </details>
+            <details id="ocr-previous-text" style="display:none;"><summary>Previous text — your corrections are kept here</summary><pre id="ocr-previous-content" style="white-space:pre-wrap;"></pre></details>
             <textarea id="script-text" rows="14" style="width:100%;white-space:pre-wrap"></textarea>
             <label><input type="checkbox" id="script-text-reviewed"> I reviewed the extracted answers and question numbers for this script.</label>
         </div>

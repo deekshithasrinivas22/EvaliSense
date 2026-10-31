@@ -13,6 +13,7 @@ from .line_segmenter import HandwritingLineSegmenter
 from .hybrid_recognizer import HybridHandwritingRecognizer as HandwritingRecognizer
 from .page_layout import prepare_handwriting_page
 from .result import HTRResult
+from .ink import assess_line_ink
 
 
 class HTRPipeline:
@@ -33,7 +34,10 @@ class HTRPipeline:
             return HTRResult('', [], None, {'model':getattr(self.recognizer,'display_name',getattr(self.recognizer,'model_name',None)),
                 'foreground':foreground,'quality_warnings':[], 'number_of_lines':0,
                 'regions':[], 'elapsed_seconds':round(time.perf_counter()-started,3)})
-        regions = self.segmenter.segment(prepared)
+        proposed = self.segmenter.segment(prepared)
+        regions = [region for region in proposed if assess_line_ink(region.image)['has_ink']]
+        for number, region in enumerate(regions, 1):
+            region.line_number = number
         # Tight, tall crops squash handwriting when TrOCR resizes to a square.
         # Preserve real strokes with white context around each line.
         for region in regions:

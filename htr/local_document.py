@@ -12,6 +12,8 @@ from .result import HTRResult, RecognizedLine
 from .recognizer import HandwritingRecognizer
 from .ensemble import recognize_written
 from .hybrid_recognizer import optical_mcq
+from .review import split_column_regions
+from .ink import assess_line_ink
 
 def fields(image):
     gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY);mask=(gray<210).astype(np.uint8)
@@ -93,20 +95,48 @@ class LocalDocumentPipeline(HTRPipeline):
         high=np.minimum(np.ceil(points.max(axis=0)).astype(int),[shape[1],shape[0]])
         return (int(low[0]),int(low[1]),max(1,int(high[0]-low[0])),max(1,int(high[1]-low[1])))
 
-    def recognize_image(self,image,debug_dir=None,on_progress=None):
+    def recognize_path(self,image_path,debug_dir=None,on_progress=None,enhanced=False):
+        image=cv2.imread(str(image_path),cv2.IMREAD_COLOR)
+        if image is None:raise ValueError('Could not read the uploaded scan image.')
+        return self.recognize_image(image,debug_dir,on_progress,enhanced=enhanced)
+
+    def reread_region(self,image):
+        """Fresh unrestricted readings of original pixels for examiner comparison."""
+        ink=assess_line_ink(image)
+        if not ink['has_ink']:
+            return {'readings':[],'needs_review':False,'blank_region':True,
+                    'note':'No handwriting strokes detected in this crop. Blank space is not unclear text; no text was generated.'}
+        optical, support, _ = self.read(image)
+        padded=cv2.copyMakeBorder(image,12,12,12,12,cv2.BORDER_CONSTANT,value=(255,255,255))
+        handwritten=self.handwriting.recognize(padded)
+        return {'readings':[{'source':'Optical crop reading','text':optical,'support':support},
+                            {'source':'Handwriting crop reading','text':handwritten.text,'support':handwritten.confidence}],
+                'needs_review':True,'note':'Fresh candidates only. Confirm the visible words and answer number against the crop; no correction was applied.'}
+
+    def recognize_image(self,image,debug_dir=None,on_progress=None,enhanced=False):
         started=time.perf_counter()
         def report(phase,n=0,total=0):
             if on_progress:on_progress({'phase':phase,'completed_lines':n,'total_lines':total,'elapsed_seconds':round(time.perf_counter()-started,2)})
         report('segmenting')
         source_shape=image.shape
-        scale=min(1.,1800/image.shape[1])
+        scale=min(1.,(2400 if enhanced else 1800)/image.shape[1])
         if scale<1:image=cv2.resize(image,None,fx=scale,fy=scale,interpolation=cv2.INTER_AREA)
         prepared,foreground=prepare_handwriting_page(image)
         if not foreground['has_foreground']:
             report('completed')
             return HTRResult('',[],None,{'model':self.recognizer.display_name,'foreground':foreground,'quality_warnings':[], 'regions':[],'number_of_lines':0})
         prepared,angle,inverse=straighten(prepared,self.detector)
-        regions=self.segmenter.segment(prepared);candidates=[]
+        proposed=split_column_regions(self.segmenter.segment(prepared))
+        regions=[];ignored=[]
+        for region in proposed:
+            ink=assess_line_ink(region.image)
+            if ink['has_ink']:
+                region.line_number=len(regions)+1
+                regions.append(region)
+            else:
+                ignored.append({'bounding_box':self.source_box(region.bounding_box,inverse/scale,source_shape),
+                                'reason':ink['reason'],'classification':'blank_or_scan_artifact'})
+        candidates=[]
         for i,region in enumerate(regions):
             text,mean,minimum=self.read(region.image)
             candidates.append({'text':text,'mean':mean,'minimum':minimum})
@@ -176,5 +206,7 @@ class LocalDocumentPipeline(HTRPipeline):
         report('completed',len(regions),len(regions))
         return HTRResult('\n'.join(line.text for line in lines),lines,None,{
             'model':self.recognizer.display_name,'foreground':foreground,'regions':records,'quality_warnings':warnings,
+            'ignored_regions':ignored,
             'number_of_lines':len(lines),'deskew_degrees':angle,'confidence_note':'Optical support is not a calibrated accuracy probability.',
+            'recognition_mode':'enhanced' if enhanced else 'standard',
             'elapsed_seconds':round(time.perf_counter()-started,3)})

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -326,7 +326,7 @@ async def preprocess(session_id: str):
         session["preprocessing_in_progress"] = False
 
 
-def _recognize_demo_session(session):
+def _recognize_demo_session(session, enhanced=False):
     from htr.result import HTRResult, RecognizedLine
     started = time.perf_counter()
     file_type = session.get("file_type", "")
@@ -360,7 +360,7 @@ def _recognize_demo_session(session):
             def update(progress):
                 session["recognition_progress"] = {**progress, "page_number": index, "total_pages": len(sources),
                     "phase": "page_completed" if progress["phase"] == "completed" else progress["phase"]}
-            result = pipeline.recognize_path(path, on_progress=update)
+            result = pipeline.recognize_path(path, on_progress=update, **({'enhanced':True} if enhanced else {}))
             text, recognized = result.full_text, result.lines
             for warning in result.metadata.get('quality_warnings',[]):
                 local_number=warning['line_number']
@@ -376,14 +376,19 @@ def _recognize_demo_session(session):
             line.line_number = len(lines) + 1
             lines.append(line)
     full_text = "\n\n".join(part for part in text_parts if part.strip())
-    if not full_text.strip():
+    empty_scan = bool(page_metadata) and all(page.get('method') == 'local_ocr' and not page.get('number_of_lines') for page in page_metadata)
+    if not full_text.strip() and not empty_scan:
         raise HTTPException(422, "No text lines were recognized. Try a clearer image cropped to the written answer.")
     confidences = [line.confidence for line in lines if line.confidence is not None]
     metadata = {"elapsed_seconds": round(time.perf_counter() - started, 2), "pages": page_metadata,
         "method": "local_ocr" if pipeline else "direct_text", "device": pipeline.recognizer.device if pipeline else None,
-        "ocr_version": "local-ensemble-v7", "source_filename": session.get("filename"),
+        "ocr_version": "local-ensemble-v9", "source_filename": session.get("filename"),
+        "recognition_mode": "enhanced" if enhanced else "standard",
+        "blank_document": not bool(full_text.strip()),
         "source_sha256": hashlib.sha256(Path(session["original_path"]).read_bytes()).hexdigest(),
         "source_kind": "uploaded_file" if session.get("filename") else "dataset"}
+    from htr.review import numbering_issues
+    metadata['numbering_issues'] = numbering_issues(full_text)
     return HTRResult(full_text, lines, sum(confidences) / len(confidences) if confidences else None, metadata)
 
 
@@ -415,21 +420,28 @@ async def recognition_progress(session_id: str):
 
 
 @app.post("/api/recognize/{session_id}")
-async def recognize(session_id: str):
+async def recognize(session_id: str, force: bool = Query(False), enhanced: bool = Query(False)):
     session = _sessions.get(session_id)
     if not session:
         raise HTTPException(404, "Session not found.")
-    if session.get("recognition_in_progress") or session.get("preprocessing_in_progress"):
+    if session.get("recognition_in_progress") or session.get("preprocessing_in_progress") or session.get('line_recheck_in_progress') or session.get('script_evaluation_busy'):
         raise HTTPException(409, "This session is already processing. Please wait.")
-    if session.get("htr_result", {}).get("metadata", {}).get("ocr_version") == "local-ensemble-v7":
+    if not force and session.get("htr_result", {}).get("metadata", {}).get("ocr_version") == "local-ensemble-v9" and (not enhanced or session['htr_result']['metadata'].get('recognition_mode') == 'enhanced'):
         return _demo_recognition_response(session_id, session["htr_result"], cached=True)
     session["recognition_in_progress"] = True
     session["recognition_started_at"] = time.time()
     session["recognition_progress"] = {"phase": "starting", "completed_lines": 0, "total_lines": 0}
     try:
-        result = await run_in_threadpool(_recognize_demo_session, session)
+        result = await run_in_threadpool(_recognize_demo_session, session, enhanced=enhanced)
+        if session.get('htr_result'):
+            previous={**session['htr_result'],'previous_evaluation':session.get('eval_result'),
+                      'previous_risk_prediction':session.get('risk_prediction'),
+                      'previous_examiner_review':session.get('examiner_review')}
+            session['recognition_history'] = (session.get('recognition_history',[]) + [previous])[-3:]
         session["htr_result"] = result.to_dict()
         session["status"] = "recognized"
+        for key in ('eval_result','risk_result','risk_prediction','examiner_review','script_evaluation'):
+            session.pop(key,None)
         session["recognition_progress"] = {"phase": "completed", "completed_lines": len(result.lines),
             "total_lines": len(result.lines), "elapsed_seconds": result.metadata.get("elapsed_seconds", 0)}
         return _demo_recognition_response(session_id, session["htr_result"])
@@ -684,6 +696,8 @@ async def evaluate(session_id: str, rubric_json: str = Form(...)):
     htr_result = session.get("htr_result")
     if not htr_result:
         raise HTTPException(400, "HTR has not been run yet. Call /api/recognize first.")
+    if htr_result.get('metadata',{}).get('blank_document'):
+        raise HTTPException(422, 'No answer text was detected. Blank space is not an unclear answer and has not been assigned a mark.')
 
     try:
         from evaluation import Rubric
@@ -1082,6 +1096,16 @@ async def recognition_line_crop(session_id: str, page_number: int, line_number: 
     """Review the original image evidence for an OCR line; never accept a file path."""
     import cv2
     from fastapi.responses import Response
+    crop = await run_in_threadpool(_recognition_crop,session_id,page_number,line_number)
+    scale=min(1.,1600/crop.shape[1],450/crop.shape[0])
+    if scale<1: crop=cv2.resize(crop,None,fx=scale,fy=scale)
+    ok,encoded=cv2.imencode('.png',crop)
+    if not ok: raise HTTPException(500,'Could not encode crop')
+    return Response(content=encoded.tobytes(),media_type='image/png',headers={'Cache-Control':'no-store'})
+
+
+def _recognition_crop(session_id, page_number, line_number):
+    import cv2
     session=_sessions.get(session_id)
     if not session: raise HTTPException(404,'Session not found')
     pages=session.get('htr_result',{}).get('metadata',{}).get('pages',[])
@@ -1094,17 +1118,33 @@ async def recognition_line_crop(session_id: str, page_number: int, line_number: 
     if not path:
         rendered=Path(session['original_path']).parent/f'pdf_page{page_number}.png'
         path=str(rendered) if session.get('file_type')=='pdf' and rendered.is_file() else session['original_path']
-    image=await run_in_threadpool(cv2.imread,str(path))
+    image=cv2.imread(str(path))
     if image is None: raise HTTPException(404,'Source image not available')
     x,y,w,h=map(int,region['bounding_box'])
     ih,iw=image.shape[:2];x1,y1=max(0,x-8),max(0,y-8);x2,y2=min(iw,x+w+8),min(ih,y+h+8)
     if x2<=x1 or y2<=y1: raise HTTPException(404,'Invalid crop')
-    crop=image[y1:y2,x1:x2]
-    scale=min(1.,1600/crop.shape[1],450/crop.shape[0])
-    if scale<1: crop=cv2.resize(crop,None,fx=scale,fy=scale)
-    ok,encoded=cv2.imencode('.png',crop)
-    if not ok: raise HTTPException(500,'Could not encode crop')
-    return Response(content=encoded.tobytes(),media_type='image/png',headers={'Cache-Control':'no-store'})
+    return image[y1:y2,x1:x2].copy()
+
+
+@app.post('/api/recognize/{session_id}/page/{page_number}/line/{line_number}/recheck')
+async def recheck_recognition_line(session_id: str, page_number: int, line_number: int):
+    session=_sessions.get(session_id)
+    if not session:raise HTTPException(404,'Session not found. Upload the scan again.')
+    if any(session.get(key) for key in ('recognition_in_progress','preprocessing_in_progress','line_recheck_in_progress')):
+        raise HTTPException(409,'Recognition is already running. Wait for it to finish.')
+    session['line_recheck_in_progress']=True
+    try:
+        crop=await run_in_threadpool(_recognition_crop,session_id,page_number,line_number)
+        pipeline=await run_in_threadpool(_get_htr)
+        result=await run_in_threadpool(pipeline.reread_region,crop)
+        return {**result,'page_number':page_number,'line_number':line_number}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Line recheck failed')
+        raise HTTPException(503,'The line could not be re-read. Your previous text is unchanged; try a clearer scan or correct the visible text.')
+    finally:
+        session['line_recheck_in_progress']=False
 
 
 @app.get('/api/recognize/{session_id}/page/{page_number}/image')

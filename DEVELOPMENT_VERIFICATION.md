@@ -1,5 +1,42 @@
 # EvaliSense development verification
 
+## Follow-up: blank areas and re-review (2026-10-31)
+
+- Empty crops, isolated scan specks and thin ruling are checked before either
+  handwriting pipeline invokes a text model. These regions produce no text
+  and no `Unclear` marker. A substantive single glyph remains eligible for OCR.
+- Blank-only recognition can return an empty reading and clear a stale result;
+  it cannot receive an automatic zero mark through the single-answer evaluator.
+- Add **Re-review / Rescan text**, **Upload clearer scan**, **Restore previous
+  text**, and **Use fresh reading** controls. Fresh rescan bypasses the cache,
+  preserves edits made before/during the retry, and offers a comparison instead
+  of overwriting examiner corrections. Previous text is held for this browser
+  session; it is not a durable backup across browser restarts.
+- Each uncertain line has **Re-verify this line** for unrestricted optical and
+  handwriting readings of its original crop, plus **Mark as blank — remove
+  marker** for examiner-confirmed empty areas. Rechecks do not automatically
+  replace text or claim that candidates are verified.
+- Fresh recognition invalidates previous scores/risk displays while retaining
+  limited recognition/review history. A failed retry leaves the previous result
+  and corrections intact. Overlapping recognition requests return a conflict.
+- Repeated wide gutters split side-by-side table text into separate crops in
+  row order. Repeated readable MCQ numbers and gaps are flagged without filling
+  in or renumbering answers.
+
+Validation: **124 backend tests passed**, plus **nine frontend workflow tests**.
+An additional final focused run passed all **11 recognition-review tests** after
+the last history/cache changes. JavaScript syntax and whitespace checks passed.
+The actual `LocalDocumentPipeline` returned `''`, zero lines and zero warnings
+for both a white image and a ruled blank image, without loading TrOCR to invent
+text. Tests also preserve a real single-letter glyph, reject scan specks, cover
+cache bypass, failed retries, line rechecks, table gutters and correction safety.
+
+The PDF underlying the newly pasted transcript was not available in this
+workspace. These checks establish blank handling and retry behavior; they do
+not establish an accuracy improvement for that particular handwriting sample.
+
+## Original development baseline
+
 Date: 2026-10-30
 
 Base: `master` at `d25587c8ffabc32b21370a55ed93de2416af4813`.
