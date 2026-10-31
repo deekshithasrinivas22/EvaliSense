@@ -1,5 +1,21 @@
 # EvaliSense development verification
 
+## Answer-retention rollback (2026-10-31)
+
+The user reported that the latest recognition changes were worse and hid too
+many answers. Restore the earlier written-answer recognizer, remove experimental
+margin cropping, and stop converting low-support or nonstandard MCQ candidates
+into number-only/empty strings. Preserve the complete recognized candidate for
+examiner correction. Bare numerical answers in the answer area are no longer
+classified as footer page counters. Keep the single Re-review button and clean
+display without internal placeholder labels.
+
+Validation: 132 backend tests passed, including answer-retention coverage. The
+running port-8001 app was changed to v11-preserve-answers and its four uploaded
+sessions were restored. Previous cached results require Re-review to regenerate.
+This rollback preserves answer content; it does not establish perfect numbering
+or handwriting accuracy. Earlier numbering experiments below are historical.
+
 ## Latest numbering and page-label fix (2026-10-31)
 
 The actual four-page scan was located in the running app's uploaded sessions.

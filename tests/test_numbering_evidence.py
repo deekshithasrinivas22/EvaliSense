@@ -26,9 +26,9 @@ def test_mcq_15_is_not_forced_to_16_when_independent_readers_agree():
     assert corroborated_mcq([('16. C',.9),('15. C',.86)],'15. c',.94)==(15,'C')
     assert corroborated_mcq([('15. A',.9)],'15. C',.94) is None
     assert corroborated_mcq([('15. C',.4)],'15. C',.94) is None
-    assert compact_candidate('20.r.',.7,True)=='20.'
-    assert compact_candidate('18. C',.09,True)=='18.'
-    assert compact_candidate('9O.C',.3,True)==''
+    assert compact_candidate('20.r.',.7,True)=='20.r.'
+    assert compact_candidate('18. C',.09,True)=='18. C'
+    assert compact_candidate('9O.C',.3,True)=='9O.C'
 
 
 def test_solution_heading_and_page_count_are_excluded_only_in_page_furniture_positions():
@@ -36,6 +36,7 @@ def test_solution_heading_and_page_count_are_excluded_only_in_page_furniture_pos
     assert not page_label('Solution',(100,400,100,25),(1000,800),False)
     assert page_label('(3)',(750,970,30,20),(1000,800))
     assert not page_label('3. C',(100,970,50,20),(1000,800))
+    assert not page_label('42',(100,970,50,20),(1000,800))
     assert not page_label('31. Data',(100,100,200,30),(1000,800))
 
 
@@ -48,29 +49,22 @@ def test_footer_does_not_join_the_last_mcq_even_on_a_single_row():
     assert rows[0].bounding_box[2]<150 and rows[1].bounding_box[0]>1500
 
 
-def test_written_split_number_is_recovered_from_crop_agreement(monkeypatch):
-    detail={'text':'2. 6. Define data','mean':.95,'words':[
-        {'text':'2','start':0,'end':1,'support':.95,'x':0},
-        {'text':'6','start':3,'end':4,'support':.95,'x':20},
-        {'text':'Define','start':6,'end':12,'support':.95,'x':100}]}
+def test_low_support_retains_the_complete_optical_answer(monkeypatch):
+    text='21. Complete written answer stays visible'
+    detail={'text':text,'mean':.9,'words':[
+        {'text':'21','start':0,'end':2,'support':.95,'x':0},
+        {'text':'Complete','start':4,'end':12,'support':.9,'x':80}]}
     monkeypatch.setattr(ensemble,'optical_details',lambda *args:detail)
     monkeypatch.setattr(ensemble,'has_crossout',lambda *args:False)
-    readings=iter([SimpleNamespace(text='Define data',confidence=.95),SimpleNamespace(text='26. Define data',confidence=.95)])
-    recognizer=SimpleNamespace(recognize=lambda *args:next(readings))
-    pipeline=SimpleNamespace(read=lambda image:('26.',.95,.9))
-    result=ensemble.recognize_written(pipeline,recognizer,np.full((40,1200,3),255,np.uint8))
-    assert result['text']=='26. Define data'
+    recognizer=SimpleNamespace(recognize=lambda *args:SimpleNamespace(text='partial',confidence=.4))
+    result=ensemble.recognize_written(SimpleNamespace(),recognizer,np.full((40,1200,3),255,np.uint8))
+    assert result['text']==text
+    assert result['reason']
 
 
-def test_margin_gap_does_not_cut_a_digit_misread_as_g_into_the_answer():
-    image=np.full((60,1200,3),255,np.uint8)
-    cv2.putText(image,'26.',(5,40),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,0),2)
-    cv2.putText(image,'Define data',(170,40),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,0),2)
+def test_ambiguous_number_does_not_trigger_the_experimental_margin_crop():
     detail={'text':'2G. Define data','mean':.9,'words':[
         {'text':'2','start':0,'end':1,'support':.9,'x':5},
         {'text':'G','start':1,'end':2,'support':.9,'x':25},
         {'text':'Define','start':4,'end':10,'support':.9,'x':170}]}
-    prefix=ensemble.prefix_details(detail,image)
-    assert prefix and prefix[0] is None
-    assert prefix[4]=='Define data'
-    assert 70<prefix[3].shape[1]<170
+    assert ensemble.prefix_details(detail,np.full((60,1200,3),255,np.uint8)) is None

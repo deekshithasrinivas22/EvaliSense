@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 # App initialisation
 # ──────────────────────────────────────────────────────────────────────
 
-OCR_VERSION = 'local-ensemble-v10'
+OCR_VERSION = 'local-ensemble-v11-preserve-answers'
 
 app = FastAPI(
     title="EvaliSense API",

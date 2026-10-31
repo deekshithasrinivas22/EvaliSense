@@ -24,7 +24,7 @@ def page_label(text, box, page_shape, before_first_answer=False):
     x,y,w,h=box
     if before_first_answer and y<page_shape[0]*.3 and normalized in {'solution','solutions','answer sheet','answer script','answers'}:
         return True
-    return y>page_shape[0]*.92 and bool(re.fullmatch(r'(?:page\s*)?\(?\d{1,3}\)?(?:\s*(?:/|of)\s*(?:total\s*)?\d{1,3})?\.?',text.strip(),re.I))
+    return y>page_shape[0]*.92 and (x>page_shape[1]*.8 or bool(re.search(r'\bpage\b|\btotal\b',text,re.I))) and bool(re.fullmatch(r'(?:page\s*)?\(?\d{1,3}\)?(?:\s*(?:/|of)\s*(?:total\s*)?\d{1,3})?\.?',text.strip(),re.I))
 
 
 def corroborated_mcq(readings, handwriting_text, handwriting_support):
@@ -35,8 +35,5 @@ def corroborated_mcq(readings, handwriting_text, handwriting_support):
 
 
 def compact_candidate(text, support, needs_review):
-    """Keep a readable number when its clipped option is not A-H; never invent it."""
-    entry=optical_mcq(text)
-    if entry and not (needs_review and support<.5):return text
-    number=question_number(text)
-    return f'{number}.' if number else ''
+    """Preserve the actual candidate; uncertainty must not erase an answer."""
+    return text
