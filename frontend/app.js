@@ -26,9 +26,7 @@ let currentReviewAssignmentId = null;
 let activeExamId = null;
 let activeSubjectId = null;
 let ocrRetryBusy = false;
-let ocrReplacementText = '';
 const ocrLastResults = new Map();
-const ocrTextBackups = new Map();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility & Formatting Helpers
@@ -145,7 +143,8 @@ async function apiPost(url, body = null, isJson = true) {
         const err = await resp.json().catch(() => ({ detail: resp.statusText }));
         throw new Error(err.detail || resp.statusText);
     }
-    return resp.json();
+    const result=await resp.json();
+    return url.startsWith('/api/recognize/') && typeof result.text==='string' ? window.EvaliSenseOCRReview.cleanRecognition(result) : result;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -264,7 +263,7 @@ async function quickLogin(username, password) {
 }
 
 async function logout() {
-    ocrLastResults.clear();ocrTextBackups.clear();ocrReplacementText='';currentSessionId=null;
+    ocrLastResults.clear();currentSessionId=null;
     showLoading('Signing out...');
     try {
         if (window.EvaliSenseDB && window.EvaliSenseDB.fbLogout) {
@@ -2329,7 +2328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 box.innerHTML = `
                     <p><strong>${method}: ${data.lines ? data.lines.length : 0} lines</strong></p>
                     <p>Source: ${escapeHtml(metadata.source_filename || 'Uploaded file')} · SHA-256: ${escapeHtml(metadata.source_sha256 || 'Unavailable')}</p>
-                    <p>Candidates marked “Unclear” need confirmation against the image. They are not final transcriptions and cannot receive marks until reviewed.</p>
+                    <p>Review the extracted words and answer numbers before grading. Blank areas are omitted.</p>
                     <p>Optical support (not an accuracy guarantee): ${data.average_confidence != null ? (data.average_confidence * 100).toFixed(1) + '%' : 'Not available'}${metadata.device ? ` · Device: ${escapeHtml(metadata.device)}` : ''}</p>
                     <pre style="background: var(--color-surface-2); padding: 0.75rem; margin-top: 0.5rem; border-radius: var(--radius-sm); font-family: monospace; white-space: pre-wrap;">${escapeHtml(data.text)}</pre>`;
             }
@@ -2346,29 +2345,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-evaluate')?.addEventListener('click', evaluateWholeScript);
     document.getElementById('btn-ocr-rereview')?.addEventListener('click', retryOCRReview);
-    document.getElementById('btn-ocr-replace')?.addEventListener('click', () => {
-        if (ocrRetryBusy || demoScriptBusy) return;
-        ocrReplacementText = document.getElementById('script-text').value;
-        document.getElementById('file-input').click();
-    });
-    document.getElementById('btn-ocr-restore')?.addEventListener('click', () => {
-        const previous = ocrTextBackups.get(currentSessionId);
-        if (previous == null || ocrRetryBusy) return;
-        document.getElementById('script-text').value = previous;
-        const evidence=document.getElementById('ocr-line-review');if(evidence)evidence.hidden=true;
-        document.getElementById('script-text-reviewed').checked = false;
-        document.getElementById('ocr-retry-status').textContent = 'Previous text restored. Review it before grading.';
-    });
-    document.getElementById('btn-ocr-use-reading')?.addEventListener('click', () => {
-        const result = ocrLastResults.get(currentSessionId);
-        if (!result || ocrRetryBusy) return;
-        ocrTextBackups.set(currentSessionId, document.getElementById('script-text').value);
-        document.getElementById('script-text').value = result.text;
-        document.getElementById('script-text-reviewed').checked = false;
-        document.getElementById('btn-ocr-restore').disabled = false;
-        document.getElementById('ocr-retry-status').textContent = 'Fresh reading applied. Your previous text can be restored.';
-        renderOCRReview(result,currentSessionId);
-    });
     document.getElementById('script-text')?.addEventListener('input',()=>{
         document.getElementById('script-text-reviewed').checked=false;
     });
@@ -2479,75 +2455,15 @@ async function evaluateWholeScript() {
     finally{demoScriptBusy=false;button.disabled=!demoQuestions.length;}
 }
 
-// Image evidence for uncertain lines. Corrections are teacher input, never inferred
-// from the official answer key or from a preferred MCQ option.
+// Keep one review action and the editable text; diagnostics stay in metadata.
 function renderOCRReview(data,sessionId) {
-    let container=document.getElementById('ocr-line-review');
-    if(!container){container=document.createElement('div');container.id='ocr-line-review';document.getElementById('script-text-review').appendChild(container);}
-    const pages=data.metadata?.pages||[];
-    const scriptArea=document.getElementById('script-text');
-    if(scriptArea.dataset.session!==sessionId){
-        scriptArea.value=data.text;scriptArea.dataset.session=sessionId;document.getElementById('script-text-reviewed').checked=false;
-        document.getElementById('ocr-retry-comparison').style.display='none';document.getElementById('ocr-retry-status').textContent='';document.getElementById('ocr-previous-text').style.display='none';
-    }
-    container.hidden=false;
+    document.getElementById('ocr-line-review')?.remove();
+    const area=document.getElementById('script-text');
+    if(area.dataset.session!==sessionId){area.value=data.text;area.dataset.session=sessionId;document.getElementById('script-text-reviewed').checked=false;}
+    area.value=window.EvaliSenseOCRReview.cleanText(area.value);
     document.getElementById('script-text-review').style.display='block';
     ocrLastResults.set(sessionId,data);
     if(ocrLastResults.size>20)ocrLastResults.delete(ocrLastResults.keys().next().value);
-    document.getElementById('btn-ocr-restore').disabled=!ocrTextBackups.has(sessionId);
-    if(ocrReplacementText){document.getElementById('ocr-previous-text').style.display='block';document.getElementById('ocr-previous-content').textContent=ocrReplacementText;ocrReplacementText='';}
-    const warnings=pages.flatMap(p=>(p.quality_warnings||[]).map(w=>({...w,page:p.page_number,alternatives:(p.regions||[]).find(r=>r.line_number===w.line_number)?.alternatives||{}})))
-        .filter(w=>scriptArea.dataset.session!==sessionId||scriptArea.value.includes(w.marker));
-    const faint=pages.filter(p=>p.foreground?.has_foreground===false);
-    container.innerHTML=(data.metadata?.numbering_issues||[]).map(issue=>`<p role="alert">${escapeHtml(issue)}</p>`).join('')+pages.filter(p=>p.method!=='text').map(p=>`<details style="margin:.75rem 0"><summary>Compare original page ${Number(p.page_number)} with the extracted text</summary><p>Check spelling, numbers, symbols and crossed-out words. Even an unflagged reading can be wrong.</p><img loading="lazy" src="/api/recognize/${encodeURIComponent(sessionId)}/page/${Number(p.page_number)}/image" alt="Original uploaded page ${Number(p.page_number)}" style="max-width:100%;background:white"></details>`).join('')+`<p>${warnings.length} uncertain lines need checking.${faint.length?` ${faint.length} page(s) have no strong foreground writing; they were deferred rather than read as answers.`:''}</p>`+
-        warnings.map((w,i)=>`<details style="margin:1rem 0;border:1px solid var(--color-border);padding:.75rem"><summary>Page ${Number(w.page)}, line ${Number(w.line_number)} — check image</summary><p>${escapeHtml(w.reason)}</p>
-        <img loading="lazy" src="/api/recognize/${encodeURIComponent(sessionId)}/page/${Number(w.page)}/line/${Number(w.line_number)}" alt="Original handwriting on page ${Number(w.page)}, line ${Number(w.line_number)}" style="max-width:100%;max-height:230px;object-fit:contain;background:white">
-        ${Object.keys(w.alternatives||{}).length?`<details><summary>Compare local reader suggestions</summary>${Object.entries(w.alternatives).filter(([k,v])=>typeof v==='string').map(([k,v])=>`<p><strong>${escapeHtml(({handwriting:'Handwriting reading',optical_line:'Second reading',optical_chunks:'Short-section reading',whole_line:'Initial reading'})[k]||k.replaceAll('_',' '))}:</strong> ${escapeHtml(v)}</p>`).join('')}</details>`:''}
-        <label>OCR candidate — confirm or correct it using the image<textarea rows="2" id="ocr-fix-${i}" style="width:100%">${escapeHtml(w.raw_text||'')}</textarea></label>
-        <button type="button" class="btn btn-secondary" data-ocr-recheck="${i}">Re-verify this line</button><div id="ocr-recheck-${i}"></div>
-        <label><input type="checkbox" id="ocr-discard-${i}"> This area is blank, a border, footer or other non-answer material; remove it.</label>
-        <button type="button" class="btn btn-secondary" data-ocr-blank="${i}">Mark as blank — remove marker</button>
-        <button type="button" class="btn btn-secondary" data-ocr-fix="${i}">Confirm this line</button><p id="ocr-status-${i}" role="status"></p></details>`).join('');
-    container.querySelectorAll('[data-ocr-fix]').forEach(button=>button.addEventListener('click',()=>{
-        if(currentSessionId!==sessionId)return;
-        const i=Number(button.dataset.ocrFix),w=warnings[i],area=document.getElementById('script-text');
-        if(area.dataset.session!==sessionId){area.value=data.text;area.dataset.session=sessionId;}
-        const value=document.getElementById(`ocr-discard-${i}`).checked?'':document.getElementById(`ocr-fix-${i}`).value.trim();
-        const status=document.getElementById(`ocr-status-${i}`);
-        if(!value&&!document.getElementById(`ocr-discard-${i}`).checked){status.textContent='Enter the visible text or mark this crop as non-answer material.';return;}
-        if(!area.value.includes(w.marker)){status.textContent='This marker was already edited in the extracted script. Check the text there.';return;}
-        area.value=area.value.replace(w.marker,value);
-        document.getElementById('script-text-reviewed').checked=false;
-        status.textContent='Correction applied to the extracted script.';
-        button.disabled=true;
-    }));
-    container.querySelectorAll('[data-ocr-recheck]').forEach(button=>button.addEventListener('click',async()=>{
-        if(currentSessionId!==sessionId || ocrRetryBusy)return;
-        const i=Number(button.dataset.ocrRecheck),warning=warnings[i],out=document.getElementById(`ocr-recheck-${i}`);
-        button.disabled=true;out.textContent='Re-reading the original line crop…';
-        try{
-            const result=await apiPost(`/api/recognize/${encodeURIComponent(sessionId)}/page/${Number(warning.page)}/line/${Number(warning.line_number)}/recheck`);
-            if(currentSessionId!==sessionId || !out.isConnected)return;
-            out.replaceChildren();
-            for(const reading of result.readings||[]){
-                const paragraph=document.createElement('p');paragraph.textContent=`${reading.source}: ${reading.text || '(no readable text)'}`;out.appendChild(paragraph);
-                if(reading.text){const use=document.createElement('button');use.type='button';use.className='btn btn-secondary';use.textContent='Use this candidate';use.onclick=()=>{document.getElementById(`ocr-fix-${i}`).value=reading.text;document.getElementById('script-text-reviewed').checked=false;};out.appendChild(use);}
-            }
-            const note=document.createElement('p');note.textContent=result.note;out.appendChild(note);
-        }catch(error){out.textContent=`Recheck failed: ${error.message}. Your text is unchanged.`;}
-        finally{button.disabled=false;}
-    }));
-    container.querySelectorAll('[data-ocr-blank]').forEach(button=>button.addEventListener('click',()=>{
-        if(currentSessionId!==sessionId || ocrRetryBusy)return;
-        const i=Number(button.dataset.ocrBlank),area=document.getElementById('script-text'),warning=warnings[i];
-        if(!area.value.includes(warning.marker)){document.getElementById(`ocr-status-${i}`).textContent='This marker was already edited; your text is unchanged.';return;}
-        ocrTextBackups.set(sessionId,area.value);
-        area.value=area.value.replace(warning.marker,'');
-        document.getElementById('script-text-reviewed').checked=false;
-        document.getElementById('btn-ocr-restore').disabled=false;
-        document.getElementById(`ocr-status-${i}`).textContent='Blank area removed. No replacement text was added.';
-        button.disabled=true;
-    }));
 }
 
 async function retryOCRReview(){
@@ -2556,7 +2472,7 @@ async function retryOCRReview(){
     const previous=ocrLastResults.get(session)?.text ?? '';
     const status=document.getElementById('ocr-retry-status');
     ocrRetryBusy=true;
-    const buttons=['btn-ocr-rereview','btn-ocr-replace','btn-recognize','btn-evaluate','btn-ocr-use-reading','btn-ocr-restore'].map(id=>document.getElementById(id)).filter(Boolean);
+    const buttons=['btn-ocr-rereview','btn-recognize','btn-evaluate'].map(id=>document.getElementById(id)).filter(Boolean);
     const disabled=buttons.map(button=>button.disabled);buttons.forEach(button=>button.disabled=true);
     status.textContent='Running a fresh scan with more image detail. Your corrections will be preserved.';
     try{
@@ -2564,20 +2480,14 @@ async function retryOCRReview(){
         if(session!==currentSessionId)return;
         // Also preserve corrections typed while recognition was running.
         const reconciled=window.EvaliSenseOCRReview.reconcile(area.value,previous,result.text);
-        ocrTextBackups.set(session,reconciled.previous);
-        if(ocrTextBackups.size>20)ocrTextBackups.delete(ocrTextBackups.keys().next().value);
         area.value=reconciled.text;document.getElementById('script-text-reviewed').checked=false;
-        document.getElementById('ocr-retry-candidate').textContent=result.text;
         const automatic=document.getElementById('htr-result');
         if(automatic){automatic.style.display='block';automatic.innerHTML=`<p><strong>Fresh automatic reading — review below before grading</strong></p><pre style="white-space:pre-wrap;">${escapeHtml(result.text || 'No handwriting detected. Blank areas produced no text.')}</pre>`;}
         const progress=document.getElementById('htr-progress');if(progress)progress.textContent='Fresh recognition completed; cached output was bypassed.';
-        document.getElementById('ocr-retry-comparison').style.display='block';
-        document.getElementById('ocr-previous-content').textContent=reconciled.previous;
-        document.getElementById('ocr-previous-text').style.display='block';
         const oldResult=document.getElementById('eval-result');oldResult.textContent='Recognition was refreshed. Review the text again before evaluating.';
         for(const id of ['risk-result','review-result']){const stale=document.getElementById(id);if(stale){stale.textContent='';stale.style.display='none';}}
         renderOCRReview(result,session);
-        status.textContent=reconciled.keptCorrections?'Fresh reading ready. Your edited text was kept; compare it before choosing Use fresh reading.':'Fresh reading ready. Review the new candidates and numbers before grading. Previous text can be restored.';
+        status.textContent=reconciled.keptCorrections?'Re-review complete. Your corrections were kept.':'Re-review complete. Check the extracted text before grading.';
     }catch(error){if(session===currentSessionId)status.textContent=`Rescan failed: ${error.message}. Your previous text and corrections are unchanged.`;}
-    finally{ocrRetryBusy=false;buttons.forEach((button,i)=>button.disabled=disabled[i]);document.getElementById('btn-ocr-restore').disabled=!ocrTextBackups.has(currentSessionId);}
+    finally{ocrRetryBusy=false;buttons.forEach((button,i)=>button.disabled=disabled[i]);}
 }

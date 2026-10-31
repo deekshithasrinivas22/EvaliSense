@@ -393,8 +393,9 @@ def _recognize_demo_session(session, enhanced=False):
 
 
 def _demo_recognition_response(session_id, result, cached=False):
-    return {"session_id": session_id, "status": "recognized", "text": result["full_text"],
-        "lines": result["lines"], "average_confidence": result["average_confidence"],
+    from htr.review import clean_display_text
+    return {"session_id": session_id, "status": "recognized", "text": clean_display_text(result["full_text"]),
+        "lines": [{**line,'text':clean_display_text(line['text'])} for line in result["lines"] if clean_display_text(line['text'])], "average_confidence": result["average_confidence"],
         "metadata": result.get("metadata", {}), "cached": cached}
 
 

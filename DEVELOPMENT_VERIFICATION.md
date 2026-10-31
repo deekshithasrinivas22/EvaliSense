@@ -1,5 +1,20 @@
 # EvaliSense development verification
 
+## Latest UI simplification (2026-10-31)
+
+At the user's request, keep one **Re-review** button and the editable script.
+Remove the repeated per-line panels, page-comparison panels and extra controls.
+Strip internal `[Unclear page ... line ...]` labels from displayed text and omit
+marker-only rows, while retaining readable OCR candidates. Internal diagnostics
+remain available, and handwriting still requires examiner confirmation before
+whole-script grading. The client also cleans older server responses so the
+running copy can show the simplified interface without a server restart.
+
+Validation: 12 focused backend tests and 10 frontend tests passed; syntax and
+whitespace checks passed. The running port-8001 page serves exactly one review
+button, no old comparison controls or line-panel code, and the new script cache
+version. No live server restart was required for these UI changes.
+
 ## Follow-up: blank areas and re-review (2026-10-31)
 
 - Empty crops, isolated scan specks and thin ruling are checked before either

@@ -154,3 +154,15 @@ def test_blank_rescan_clears_old_unclear_result_without_assigning_zero(session,m
     assert 'eval_result' not in state
     evaluated=TestClient(api.app).post('/api/evaluate/retry-test',data={'rubric_json':'{}'})
     assert evaluated.status_code==422
+
+
+def test_display_omits_internal_labels_but_review_is_still_required(session):
+    state,_=session
+    text='[Unclear page 2 line 16 — review scan]\n21. Actual candidate [Unclear page 2 line 17 — review scan]'
+    state['htr_result']['full_text']=text
+    state['htr_result']['lines']=[{'line_number':1,'text':text}]
+    client=TestClient(api.app)
+    response=client.post('/api/recognize/retry-test')
+    assert response.json()['text']=='21. Actual candidate'
+    assert state['htr_result']['full_text']==text
+    assert client.post('/api/evaluate-script/retry-test',json={'text':'21. Actual candidate','questions':[]}).status_code==422

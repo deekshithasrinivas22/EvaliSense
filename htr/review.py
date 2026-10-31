@@ -6,6 +6,12 @@ import numpy as np
 from .local_segmenter import LineRegion
 
 
+def clean_display_text(text):
+    """Keep optical candidates and paragraphs, without internal review labels."""
+    text=re.sub(r'\[Unclear(?: page \d+)? line \d+[^\]\r\n]*\]','',text or '')
+    return re.sub(r'\n{3,}','\n\n','\n'.join(line.rstrip() for line in text.splitlines())).strip()
+
+
 def split_column_regions(regions):
     """Separate side-by-side text only with repeated gutter evidence.
 
